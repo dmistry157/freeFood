@@ -1,0 +1,15 @@
+# Secrets
+.env
+credentials.json
+token.json
+
+# Pipeline artifacts
+media/
+__pycache__/
+.venv/
+
+# App
+node_modules/
+.expo/
+
+.DS_Store

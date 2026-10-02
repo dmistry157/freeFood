@@ -1,0 +1,10 @@
+supabase
+feedparser
+icalendar
+requests
+google-api-python-client
+google-auth-oauthlib
+apify-client
+google-genai
+rapidfuzz
+python-dotenv

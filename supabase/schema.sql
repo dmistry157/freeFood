@@ -1,0 +1,1 @@
+-- Supabase schema (Phase 1)
