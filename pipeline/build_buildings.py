@@ -10,7 +10,9 @@ import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "buildings.csv"
-OVERPASS = "https://overpass-api.de/api/interpreter"
+OVERPASS = ["https://overpass-api.de/api/interpreter",          # main server, then mirrors
+            "https://overpass.kumi.systems/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
 BBOX = "37.8620,-122.2700,37.8790,-122.2470"  # campus + Southside + Northside
 QUERY = f"""[out:json][timeout:60];(
 nwr["building"]["name"]({BBOX});
@@ -92,7 +94,7 @@ ALIASES = {
     "California Memorial Stadium": ["Memorial Stadium", "Simpson Center"],
     "Hearst Memorial Gymnasium": ["Hearst Gym"],
     "Hearst Memorial Mining Building": ["Hearst Mining Building", "HMMB"],
-    "Hearst Greek Theatre": ["Greek Theatre", "Greek Theater", "The Greek"],
+    "Hearst Greek Theatre": ["Greek Theatre", "Greek Theater"],
     "Hearst Mining Circle": ["Mining Circle"],
     "Genetics and Plant Biology": ["GPB"],
     "Evans Hall": ["Evans"],
@@ -128,9 +130,16 @@ ALIASES = {
 
 
 def main():
-    resp = requests.post(OVERPASS, data={"data": QUERY}, timeout=120,
-                         headers={"User-Agent": "freeFoodTracker/0.1 (github.com/dmistry157/freeFood)"})
-    resp.raise_for_status()
+    for url in OVERPASS:
+        try:
+            resp = requests.post(url, data={"data": QUERY}, timeout=120,
+                                 headers={"User-Agent": "freeFoodTracker/0.1 (github.com/dmistry157/freeFood)"})
+            resp.raise_for_status()
+            break
+        except requests.RequestException as err:
+            print(f"{url} failed ({err}); trying next")
+    else:
+        raise SystemExit("All Overpass servers failed")
 
     rows = {}
     for e in resp.json()["elements"]:

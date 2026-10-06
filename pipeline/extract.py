@@ -88,6 +88,10 @@ EVENT_SCHEMA = {
 }
 
 
+URGENT = re.compile(r"\b(tonight|today|happening now|right now|this (morning|afternoon|evening)|"
+                    r"in \d+\s*(min|mins|minutes|hour|hours|hr|hrs))\b", re.I)
+
+
 class RateLimited(Exception):
     pass
 
@@ -166,16 +170,22 @@ def call_gemini(batch: list[tuple[dict, list[str]]]) -> list[dict]:
         if resp.status_code == 429:
             print(f"  {model}: quota hit, switching model")
             _Models.i += 1
+            attempt = 0
             continue
-        if resp.status_code in (500, 503) and attempt < 2:
-            attempt += 1
-            time.sleep(10 * attempt)
+        if resp.status_code in (500, 503):
+            if attempt < 2:
+                attempt += 1
+                time.sleep(10 * attempt)
+                continue
+            print(f"  {model}: overloaded ({resp.status_code}), switching model")
+            _Models.i += 1
+            attempt = 0
             continue
         resp.raise_for_status()
         out = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
         print(f"  {model}: {len(batch)} items in one call")
         return json.loads(out).get("events", [])
-    raise RateLimited("all Gemini models are out of free quota for today")
+    raise RateLimited("no Gemini model available (out of free quota or overloaded)")
 
 
 # ---------- per item ----------
@@ -215,18 +225,20 @@ def load_images(item: dict) -> list[str]:
     return images
 
 
-def batches(items: list[tuple[dict, list[str]]]):
-    """Text-only items in groups of TEXT_BATCH; image items in groups of IMAGE_BATCH / MAX_BATCH_IMAGES."""
-    text = [x for x in items if not x[1]]
+def batches(items: list[dict]):
+    """Text-only items in groups of TEXT_BATCH; image items in groups of IMAGE_BATCH / MAX_BATCH_IMAGES.
+    Grouped by image refs; images are loaded only for batches actually sent."""
+    n_refs = lambda it: len((it["media_paths"] or [])[:MAX_IMAGES])
+    text = [it for it in items if not n_refs(it)]
     for i in range(0, len(text), TEXT_BATCH):
         yield text[i:i + TEXT_BATCH]
     group, n_img = [], 0
-    for x in (x for x in items if x[1]):
-        if group and (len(group) >= IMAGE_BATCH or n_img + len(x[1]) > MAX_BATCH_IMAGES):
+    for it in (it for it in items if n_refs(it)):
+        if group and (len(group) >= IMAGE_BATCH or n_img + n_refs(it) > MAX_BATCH_IMAGES):
             yield group
             group, n_img = [], 0
-        group.append(x)
-        n_img += len(x[1])
+        group.append(it)
+        n_img += n_refs(it)
     if group:
         yield group
 
@@ -245,26 +257,55 @@ def mark_processed(item: dict):
     delete_media(item["media_paths"] or [])
 
 
-def run(limit: int = 60, ids: list[int] | None = None, dry_run: bool = False) -> list[dict]:
-    """Extract events from unprocessed raw items. Returns kept events (with raw_item id + source)."""
-    items = fetch_items(limit, ids)
-    skipped = [it for it in items if not needs_llm(it)]
-    for it in skipped:
-        if not dry_run:
-            mark_processed(it)
-    todo = [(it, load_images(it)) for it in items if needs_llm(it)]
-    print(f"extract: {len(items)} items, {len(skipped)} skipped by keyword check, {len(todo)} to Gemini")
+START_LINE = re.compile(r"^Start: (\S+)", re.M)
 
-    now, results = datetime.now(timezone.utc), []
-    for batch in batches(todo):
+
+def listed_start(item: dict) -> datetime | None:
+    """Start time from structured sources (Berkeley Events, CalLink); None for email/Instagram."""
+    m = START_LINE.search(item["text"] or "")
+    return parse_time(m.group(1)) if m else None
+
+
+def priority(item: dict):
+    """Urgent first, then soonest listed start, then newest posts."""
+    start = listed_start(item)
+    posted = item.get("posted_at") or ""
+    return (not URGENT.search(item["text"] or ""), start.timestamp() if start else float("inf"),
+            "".join(chr(0x10FFFF - ord(c)) for c in posted))  # newest posted first
+
+
+def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
+        urgent_only: bool = False, max_calls: int | None = None) -> list[dict]:
+    """Extract events from unprocessed raw items. Returns kept events (with raw_item id + source).
+    urgent_only: just items that say tonight/today/in N mins (hourly runs, to spare Gemini quota).
+    max_calls: Gemini calls allowed this run; the rest wait for the next run."""
+    now = datetime.now(timezone.utc)
+    items = fetch_items(limit, ids)
+    done_without_llm = [it for it in items if not needs_llm(it) or ((listed_start(it) or now) < now - DEFAULT_DURATION)]
+    if not dry_run:
+        for it in done_without_llm:
+            mark_processed(it)
+    todo = sorted((it for it in items if it not in done_without_llm), key=priority)
+    if urgent_only:
+        todo = [it for it in todo if URGENT.search(it["text"] or "")]
+    print(f"extract: {len(items)} pending, {len(done_without_llm)} done without Gemini (no keywords / already over), "
+          f"{len(todo)} to Gemini{' (urgent only)' if urgent_only else ''}, max {max_calls or 'unlimited'} calls")
+
+    results, calls = [], 0
+    for group in batches(todo):
+        if max_calls is not None and calls >= max_calls:
+            print("Call cap reached; the remaining items wait for the next run.")
+            break
+        batch = [(it, load_images(it)) for it in group]
         try:
             raw = call_gemini(batch)
         except RateLimited as err:
             print(f"Stopping: {err}. The remaining items wait for the next run.")
             break
+        calls += 1
         by_id = {it["id"]: it for it, _ in batch}
         for ev in raw:
-            item = by_id.get(int(ev.get("item_id") or 0)) if str(ev.get("item_id", "")).isdigit() else None
+            item = by_id.get(int(ev["item_id"])) if str(ev.get("item_id", "")).isdigit() else None
             kept = keep(ev, now) if item else None
             if kept:
                 results.append({**kept, "raw_item_id": item["id"], "source": item["source"]})
@@ -272,12 +313,13 @@ def run(limit: int = 60, ids: list[int] | None = None, dry_run: bool = False) ->
             for it, _ in batch:
                 mark_processed(it)
         time.sleep(DELAY_S)
+    print(f"extract: {calls} Gemini calls, {len(results)} events kept")
     return results
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--limit", type=int, default=60)
+    ap.add_argument("--limit", type=int, default=500)
     ap.add_argument("--ids", help="comma-separated raw_item ids (for testing)")
     ap.add_argument("--dry-run", action="store_true", help="don't mark processed or delete images")
     a = ap.parse_args()

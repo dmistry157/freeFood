@@ -21,7 +21,8 @@ NOISE = re.compile(r"\b(uc berkeley|ucb|berkeley|university of california|campus
 def normalize(s: str) -> str:
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
     s = s.replace("&", " and ").replace("'", "").replace("’", "")
-    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+    s = re.sub(r"[^a-z0-9]+", " ", s).strip()
+    return re.sub(r"^the ", "", s)  # "Law Building" == "The Law Building"
 
 
 @lru_cache(maxsize=1)

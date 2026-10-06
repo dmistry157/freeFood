@@ -42,6 +42,8 @@ CASES = [
     ("Cheit Hall C320", "Earl F. Cheit Hall"),
     ("Jarvis Auditorium", "Grimes Engineering Center"),
     ("Eugene Jarvis Auditorium (#103), Grimes Engineering Center", "Grimes Engineering Center"),
+    ("Law Building 170", "The Law Building"),
+    ("Greek life mixer", None),
     ("Zoom", None),
     ("Online (link in bio)", None),
     ("Palace of Fine Arts (3601 Lyon St, San Francisco)", None),

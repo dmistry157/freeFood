@@ -20,11 +20,17 @@ SAME_EVENT_TITLE = 60  # token_set_ratio at or above this = same event
 TEXT_FIELDS = ["title", "building", "room", "food", "food_reason", "requirements", "link", "open_to"]
 RICHEST_WINS = TEXT_FIELDS[1:]  # title keeps the first version stored (shorter, cleaner on a pin)
 COORDS = re.compile(r"^Coordinates: (-?\d+\.\d+), (-?\d+\.\d+)", re.M)
+ORGANIZER = re.compile(r"^Organizer: (.+)$", re.M)
+# Organizers whose listings often omit the building but almost always meet in one place.
+DEFAULT_BUILDING = {"Law": "The Law Building"}
 URL = re.compile(r"^URL: (https?://\S+)", re.M)
 
 
 def locate(ev: dict, raw_text: str) -> tuple[str, float | None, float | None]:
     building, room = ev.get("building") or "", ev.get("room") or ""
+    org = ORGANIZER.search(raw_text or "")
+    if not building and org and org.group(1).strip() in DEFAULT_BUILDING:
+        building = DEFAULT_BUILDING[org.group(1).strip()]
     hit = geocode(building) or geocode(f"{building} {room}")
     if hit:
         return hit["building"], hit["lat"], hit["lng"]
