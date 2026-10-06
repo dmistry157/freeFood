@@ -91,6 +91,15 @@ Make one LLM call per raw item, with its text and images, returning this JSON:
   - **likely**: not mentioned, but the event type usually has food (company info sessions, tech talks, career/networking events, receptions, mixers, study breaks, club general meetings). `food_reason` says why.
   - **none**: neither.
 - Uses Gemini Flash free tier for all sources (decided 2026-10-04; accepted that Google may train on inputs).
+- The free tier allows only about 20 requests/day per model, so:
+  - Items are **batched** (≤8 text items or ≤3 image items per call).
+  - The model chain is `gemini-3.5-flash` → `3.5-flash-lite` → `3.1-flash-lite`. When all are out, items wait for the next day.
+  - Lite is less consistent (it once missed a whole newsletter), so it's the fallback only.
+- A free keyword check skips items with no food or event words and no images. Banner-shaped images are skipped, and images are downscaled to 1024px.
+- Test (2026-10-06):
+  - `3.5-flash`: 18/18 reached.
+  - `3.5-flash-lite` batched: 18/20.
+  - **TODO:** confirm `3.5-flash` batched once the quota resets.
 - Use the America/Los_Angeles timezone, and resolve relative dates ("tomorrow", "this Thursday") from the item's posted date.
 - Drop items that aren't events open to a group (newsletters without a dated event, job postings, personal/1:1 plans), where `food_status` is none, or where confidence is below 0.6.
 

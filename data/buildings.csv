@@ -126,7 +126,7 @@ Durant Residence Hall,,37.868747,-122.253106
 Durham Studio Theater,,37.870432,-122.260479
 Dwight Triangle,,37.864936,-122.258578
 Dwinelle Hall,Dwinelle,37.870715,-122.260630
-Earl F. Cheit Hall,,37.871839,-122.254272
+Earl F. Cheit Hall,Cheit|Cheit Hall,37.871839,-122.254272
 Earl Warren Hall,,37.874389,-122.266978
 Earth Sciences and Map Library,,37.874028,-122.259657
 East Gate,,37.873815,-122.255524
@@ -187,7 +187,7 @@ Grace Garden,,37.874739,-122.264542
 Graduate Theological Union Hewlett Library,,37.875543,-122.261874
 Graduate by Hilton Berkeley,,37.867883,-122.256301
 Griffiths Hall,,37.865846,-122.254285
-Grimes Engineering Center,Bechtel|Bechtel Engineering Center|Grimes,37.874219,-122.258190
+Grimes Engineering Center,Bechtel|Bechtel Engineering Center|Grimes|Jarvis Auditorium|Eugene Jarvis Auditorium,37.874219,-122.258190
 Haas Pavilion,,37.869362,-122.262185
 Haas School of Business,Haas|Haas School|Haas Business School,37.871940,-122.253840
 Hal and Audrey Norton House,,37.863921,-122.256085
@@ -364,6 +364,7 @@ The Campanile (Sather Tower),Campanile|Sather Tower,37.872060,-122.257832
 The Church in Berkeley,,37.865415,-122.261242
 The Church of Jesus Christ of Latter-day Saints,,37.875488,-122.262860
 The Four Cedars,,37.878735,-122.268278
+The Gateway,Gateway|Gateway Building|CDSS Gateway,37.874138,-122.263479
 The Grassroots House,,37.862680,-122.268578
 The Lair,Bear's Lair,37.865014,-122.267975
 The Law Building,Boalt|Boalt Hall|Berkeley Law|Law School,37.869938,-122.253460

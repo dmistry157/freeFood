@@ -21,7 +21,7 @@ nwr["amenity"~"library|theatre|arts_centre|community_centre|place_of_worship"]["
 # Not real event venues, or names too generic to match safely.
 SKIP = {
     "Residence Hall", "Suites", "Child Care", "Child Care Center", "Berkeley Central",
-    "Downtown Berkeley", "The Edge", "The Standard", "The Ivy", "The Gateway", "The Metropolitan",
+    "Downtown Berkeley", "The Edge", "The Standard", "The Ivy", "The Metropolitan",
     "The Berk", "The Berk on Arch", "The Artisan", "The Blake", "The Dwight", "The Durant",
     "CVS Pharmacy", "Sweetgreen", "AT&T", "Eureka!", "Rapa Nui", "Panormic", "Steam Plant",
     "Central Heating Plant", "Site Access Office", "Hazardous Materials Facility",
@@ -70,7 +70,10 @@ ALIASES = {
     "Sutardja Dai Hall (CITRIS)": ["SDH", "Sutardja Dai", "Sutardja Dai Hall", "CITRIS"],
     "Jacobs Hall": ["Jacobs"],
     "Etcheverry Hall": ["Etcheverry", "Etch"],
-    "Grimes Engineering Center": ["Bechtel", "Bechtel Engineering Center", "Grimes"],
+    "Grimes Engineering Center": ["Bechtel", "Bechtel Engineering Center", "Grimes", "Jarvis Auditorium",
+        "Eugene Jarvis Auditorium"],
+    "The Gateway": ["Gateway", "Gateway Building", "CDSS Gateway"],
+    "Earl F. Cheit Hall": ["Cheit", "Cheit Hall"],
     "Moffitt Undergraduate Library": ["Moffitt", "Moffitt Library"],
     "Free Speech Movement Cafe": ["FSM Cafe"],
     "Doe Memorial Library": ["Doe", "Doe Library"],

@@ -37,6 +37,11 @@ CASES = [
     ("the Campanile", "The Campanile (Sather Tower)"),
     ("Dwinele Hall 145", "Dwinelle Hall"),          # typo
     ("Etchevery Hall", "Etcheverry Hall"),         # typo
+    ("Gateway 1220", "The Gateway"),
+    ("Gateway 5th Floor Event Space", "The Gateway"),
+    ("Cheit Hall C320", "Earl F. Cheit Hall"),
+    ("Jarvis Auditorium", "Grimes Engineering Center"),
+    ("Eugene Jarvis Auditorium (#103), Grimes Engineering Center", "Grimes Engineering Center"),
     ("Zoom", None),
     ("Online (link in bio)", None),
     ("Palace of Fine Arts (3601 Lyon St, San Francisco)", None),

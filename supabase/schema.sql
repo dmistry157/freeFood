@@ -38,6 +38,11 @@ create table if not exists events (
 );
 create index if not exists events_time on events (start_time, end_time);
 
+-- Phase 4: food certainty. stated = food mentioned; likely = event type usually has food.
+alter table events add column if not exists food_status text not null default 'stated'
+  check (food_status in ('stated', 'likely'));
+alter table events add column if not exists food_reason text;
+
 create or replace function set_updated_at() returns trigger
 language plpgsql as $$
 begin

@@ -8,3 +8,4 @@ apify-client
 google-genai
 rapidfuzz
 python-dotenv
+pillow
