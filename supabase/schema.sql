@@ -79,3 +79,10 @@ alter table clubs     enable row level security;
 
 drop policy if exists "public read events" on events;
 create policy "public read events" on events for select to anon, authenticated using (true);
+
+-- Phase 6: when each scheduled job last ran, so the pipeline adapts to irregular GitHub schedules.
+create table if not exists pipeline_state (
+  key   text primary key,          -- last_full_extract | last_ig_posts | last_ig_stories
+  value timestamptz not null
+);
+alter table pipeline_state enable row level security;  -- pipeline (secret key) only

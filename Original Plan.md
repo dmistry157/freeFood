@@ -99,7 +99,7 @@ Make one LLM call per raw item, with its text and images, returning this JSON:
 - Test (2026-10-06):
   - `3.5-flash`: 18/18 reached.
   - `3.5-flash-lite` batched: 18/20.
-  - **TODO:** confirm `3.5-flash` batched once the quota resets.
+  - `3.5-flash` batched (2026-10-07): **19/19** ✅ (Phase 4 done).
 - Use the America/Los_Angeles timezone, and resolve relative dates ("tomorrow", "this Thursday") from the item's posted date.
 - Drop items that aren't events open to a group (newsletters without a dated event, job postings, personal/1:1 plans), where `food_status` is none, or where confidence is below 0.6.
 

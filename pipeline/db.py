@@ -75,3 +75,18 @@ def delete_media(refs: list[str]) -> None:
     if paths:
         requests.delete(f"{STORAGE}/object/{BUCKET}", headers=HEADERS, json={"prefixes": paths},
                         timeout=30).raise_for_status()
+
+
+def get_state(key: str) -> datetime | None:
+    """When a scheduled job last ran (pipeline_state table)."""
+    resp = requests.get(f"{REST}/pipeline_state", headers=HEADERS, timeout=30,
+                        params={"key": f"eq.{key}", "select": "value"})
+    resp.raise_for_status()
+    rows = resp.json()
+    return datetime.fromisoformat(rows[0]["value"]) if rows else None
+
+
+def set_state(key: str, when: datetime) -> None:
+    requests.post(f"{REST}/pipeline_state", headers={**HEADERS, "Prefer": "resolution=merge-duplicates"},
+                  params={"on_conflict": "key"}, json={"key": key, "value": when.isoformat()},
+                  timeout=30).raise_for_status()

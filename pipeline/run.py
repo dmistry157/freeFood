@@ -9,18 +9,22 @@ Run from the repo root, choosing which sources to fetch this run (cron decides t
   .venv/bin/python -m pipeline.run auto       # scheduled mode (GitHub Actions, hourly)
 A failing source is logged and skipped so the others still run.
 
-auto mode (hour in America/Los_Angeles), sized to Gemini's free ~20 requests/day:
-  every hour   berkeley_events + gmail; extract only urgent items (tonight/today/in N mins)
-  every 3h     + callink; extract everything pending
-  9am / 6pm    + ig_posts / ig_stories (both on 3-hour runs)
+auto mode adapts to however often GitHub actually runs it (it promises hourly, often delivers ~6h).
+Each job runs when enough time has passed since it last ran (pipeline_state table):
+  every run                       berkeley_events + gmail
+  >= 2.5h since last full run     + callink; extract everything pending (max 3 Gemini calls)
+  otherwise                       extract only urgent items (tonight/today/in N mins; max 1 call)
+  >= 20h since posts, after 8am   + ig_posts
+  >= 20h since stories, after 12pm + ig_stories (stories last 24h; also caps Apify spend)
+Gemini's free tier is ~20 requests/day/model; Flash-Lite takes any overflow.
 """
 import sys
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from pipeline import dedupe, extract
-from pipeline.db import cleanup
+from pipeline.db import cleanup, get_state, set_state
 from pipeline.sources import berkeley_events, callink, gmail, instagram
 
 SOURCES = {
@@ -32,17 +36,31 @@ SOURCES = {
 }
 
 
-def auto_plan(hour: int) -> tuple[list[str], bool]:
-    """(sources to fetch, urgent_only) for this hour."""
-    names = ["berkeley_events", "gmail"]
-    full = hour % 3 == 0
+LA = ZoneInfo("America/Los_Angeles")
+FULL_EVERY = timedelta(hours=2.5)
+IG_EVERY = timedelta(hours=20)
+
+
+def due(key: str, every: timedelta, now: datetime) -> bool:
+    last = get_state(key)
+    return last is None or now - last >= every
+
+
+def auto_plan(now: datetime) -> tuple[list[str], bool, list[str]]:
+    """(sources to fetch, urgent_only, state keys to stamp after the run)."""
+    hour = now.astimezone(LA).hour
+    names, stamps = ["berkeley_events", "gmail"], []
+    full = due("last_full_extract", FULL_EVERY, now)
     if full:
         names.append("callink")
-    if hour == 9:
+        stamps.append("last_full_extract")
+    if hour >= 8 and due("last_ig_posts", IG_EVERY, now):
         names.append("ig_posts")
-    if hour == 18:
+        stamps.append("last_ig_posts")
+    if hour >= 12 and due("last_ig_stories", IG_EVERY, now):
         names.append("ig_stories")
-    return names, not full
+        stamps.append("last_ig_stories")
+    return names, not full, stamps
 
 
 def main(names: list[str], urgent_only: bool = False) -> int:
@@ -61,10 +79,14 @@ def main(names: list[str], urgent_only: bool = False) -> int:
 if __name__ == "__main__":
     args = sys.argv[1:]
     if args == ["auto"]:
-        hour = datetime.now(ZoneInfo("America/Los_Angeles")).hour
-        names, urgent_only = auto_plan(hour)
-        print(f"auto @ {hour}:00 PT: sources={names}, extract={'urgent only' if urgent_only else 'all pending'}")
-        sys.exit(1 if main(names, urgent_only) else 0)
+        now = datetime.now(timezone.utc)
+        names, urgent_only, stamps = auto_plan(now)
+        print(f"auto @ {now.astimezone(LA):%a %H:%M} PT: sources={names}, "
+              f"extract={'urgent only' if urgent_only else 'all pending'}")
+        failed = main(names, urgent_only)
+        for key in stamps:  # stamp even if a source failed, so a broken scraper can't run (and bill) every hour
+            set_state(key, now)
+        sys.exit(1 if failed else 0)
     unknown = set(args) - set(SOURCES)
     if unknown:
         sys.exit(f"unknown sources: {sorted(unknown)}; choose from {sorted(SOURCES)} or 'auto'")
