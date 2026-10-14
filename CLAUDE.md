@@ -1,0 +1,39 @@
+# Berkeley Free Food Map
+
+An iPhone app that shows a map of UC Berkeley campus events with free food. A **red pin** means it's happening now. A **grey pin** means it starts within 6 hours. Tapping a pin opens a card with the title, time, location, food, entry requirements and a link.
+
+`Original Plan.md` is the full design and the source of truth. `TODO.md` lists open work.
+
+## How it works
+```
+sources ──► raw_items (Supabase) ──► Gemini extraction ──► geocode + dedupe ──► events (Supabase) ──► Expo app
+```
+- **The pipeline** (`pipeline/`, Python 3.13) runs on GitHub Actions (`.github/workflows/pipeline.yml`, cron hourly; GitHub actually fires it about every 6 hrs). The entry point is `python -m pipeline.run auto`.
+  - `auto_plan()` in `run.py` decides which sources run, based on how long it's been since each last ran. Those times are kept in the `pipeline_state` table.
+- **Sources** (`pipeline/sources/`):
+  - `berkeley_events.py`: events.berkeley.edu, LiveWhale JSON, 7 days ahead.
+  - `gmail.py`: the owner's bmail `FreeFood` label only. It needs the owner's OAuth credentials, so skip it locally.
+  - `callink.py`: public CalLink events, which include coordinates.
+  - `instagram.py`: 20 club accounts via Apify, posts and stories once a day. Spending is capped by `apify_budget.py` (≤ $4.50/month, ≤ $0.25/run).
+- **Extraction** (`extract.py`): Gemini free tier, batched, falling back from `gemini-3.5-flash` → `-flash-lite` → `3.1-flash-lite`. Every event gets a `food_status` of `stated` or `likely`. "Likely" covers info sessions, "over lunch" and similar, and the app labels those "Food likely · not confirmed".
+- **Geocoding** (`geocode.py`): matches location text against `data/buildings.csv` (415 campus places from OpenStreetMap plus aliases). Events with no match have no lat/lng and appear in the app's "not on the map" list.
+- **Dedupe** (`dedupe.py`): fingerprint = date + start hour + building, then a fuzzy title match.
+- **Database**: Supabase Postgres. The schema is in `supabase/schema.sql`. Row-level security is on, and the only public policy is "read events".
+- **App** (`app/`): Expo SDK 57, TypeScript, react-native-maps (Apple Maps). Main files: `App.tsx` and `src/` (`events.ts`, `theme.ts`, `components/`). It reads events straight from Supabase's REST API with the read-only publishable key. Before changing app code, see `app/AGENTS.md` (Expo-version rules).
+
+## Setup
+- **App:** `cd app && npm install`. Create `app/.env` from `app/.env.example`; the owner sends the two values. Then `npx expo start` and scan the QR code with Expo Go.
+- **Pipeline:**
+  1. `python3 -m venv .venv && .venv/bin/pip install -r pipeline/requirements.txt`.
+  2. Create `.env` from `.env.example`, using your own Gemini and Apify keys.
+  3. Run one source with `python -m pipeline.run berkeley_events`.
+  4. Geocode test: `.venv/bin/python pipeline/tests/test_geocode.py`.
+
+## Rules
+- **Never commit secrets.** `.env`, `app/.env` and `credentials.json` are gitignored, so keep them that way. Before committing, check `git status`, and grep for `sb_secret_`, `AIza` and `apify_api_`.
+- **Spend as little money as possible.** Use free tiers only. Don't add paid services, and don't raise the Apify budget or call limits, without asking the owner.
+- **Rate-limit every scraper** (there are delays between requests). Gemini's free tier allows about 20 requests per day per model, which is why calls are batched and capped per run.
+- **Plan each change before making it, and build and test one piece at a time.**
+- Gmail must only ever read the `FreeFood` label, never the wider inbox.
+- `SUPABASE_SECRET_KEY` bypasses row-level security. Use it only in the pipeline, never in the app.
+- Work on a branch and open a PR to `main`. `main` is what GitHub Actions runs.
