@@ -45,10 +45,25 @@ def fetch() -> list[dict]:
     return [e for e in unique.values() if e["date"] <= horizon]
 
 
+STALE_AFTER = timedelta(days=3)
+
+
+def is_fresh() -> bool:
+    """True if calevents added an upcoming event recently (its scraper is still running)."""
+    resp = requests.get(API, headers=HEADERS, params={"direction": "future", "limit": PAGE}, timeout=30)
+    resp.raise_for_status()
+    newest = max(datetime.fromisoformat(e["created_at"].replace("Z", "+00:00")) for e in resp.json()["events"])
+    return datetime.now(LA) - newest < STALE_AFTER
+
+
 def covered_handles() -> set[str]:
     """Instagram accounts calevents already turns into events (so our Apify posts scrape can skip them).
-    Empty set if calevents is unreachable, so our scraper falls back to covering everyone."""
+    Empty set if calevents is down or has stopped adding events, so our scraper covers everyone again."""
     try:
+        if not is_fresh():
+            print(f"{SOURCE}: no new events in {STALE_AFTER.days} days; Instagram posts will cover every club")
+            return set()
+        time.sleep(DELAY_S)
         resp = requests.get(f"{API.rsplit('/', 1)[0]}/accounts", headers=HEADERS, timeout=30)
         resp.raise_for_status()
         return {a["club_username"].lower() for a in resp.json()

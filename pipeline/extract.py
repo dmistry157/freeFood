@@ -28,7 +28,12 @@ from PIL import Image
 
 from pipeline.db import BUCKET, HEADERS, REST, STORAGE, delete_media
 
-MODELS = os.environ.get("GEMINI_MODELS", "gemini-3.5-flash,gemini-3.5-flash-lite,gemini-3.1-flash-lite").split(",")
+# Free-tier quotas are per model, so a long chain multiplies the daily budget. Best first; Gemma 4 last
+# (slow, but its own quota and 8/8 on our text eval). Gemma 4 26B was dropped: it returned broken JSON.
+MODELS = os.environ.get("GEMINI_MODELS", ",".join([
+    "gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3-flash-preview",
+    "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.1-flash-lite-preview", "gemma-4-31b-it",
+])).split(",")
 GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent"
 TEXT_BATCH = 8      # text-only items per call
 IMAGE_BATCH = 3     # items with images per call
@@ -166,26 +171,36 @@ def call_gemini(batch: list[tuple[dict, list[str]]]) -> list[dict]:
     attempt = 0
     while _Models.i < len(MODELS):
         model = MODELS[_Models.i]
-        resp = requests.post(GEMINI.format(model), headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
-                             json=body, timeout=180)
-        if resp.status_code == 429:
-            print(f"  {model}: quota hit, switching model")
+        try:
+            resp = requests.post(GEMINI.format(model), headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
+                                 json=body, timeout=300 if model.startswith("gemma") else 180)
+        except requests.RequestException as err:  # timeout or dropped connection: treat like overload
+            resp, net_err = None, err
+        if resp is not None and resp.status_code in (404, 429):  # gone, or out of free quota today
+            print(f"  {model}: {'quota hit' if resp.status_code == 429 else 'not available'}, switching model")
             _Models.i += 1
             attempt = 0
             continue
-        if resp.status_code in (500, 503):
-            if attempt < 2:
+        if resp is None or resp.status_code in (500, 502, 503, 504):
+            if attempt < 1:
                 attempt += 1
-                time.sleep(10 * attempt)
+                time.sleep(5)
                 continue
-            print(f"  {model}: overloaded ({resp.status_code}), switching model")
+            print(f"  {model}: overloaded ({resp.status_code if resp is not None else net_err}), switching model")
             _Models.i += 1
             attempt = 0
             continue
         resp.raise_for_status()
-        out = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        try:
+            out = resp.json()["candidates"][0]["content"]["parts"][-1]["text"]
+            events = json.loads(out).get("events", [])
+        except (KeyError, IndexError, ValueError, AttributeError) as err:  # blocked, empty or malformed answer
+            print(f"  {model}: unusable answer ({type(err).__name__}), switching model")
+            _Models.i += 1
+            attempt = 0
+            continue
         print(f"  {model}: {len(batch)} items in one call")
-        return json.loads(out).get("events", [])
+        return events
     raise RateLimited("no Gemini model available (out of free quota or overloaded)")
 
 

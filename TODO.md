@@ -19,6 +19,8 @@
 - [ ] Phase 8: TestFlight. Needs the Apple Developer account ($99/yr).
 
 ## Pipeline
+- [ ] Around 2026-10-21, check Apify spend now that 36 clubs are active (stories for all, posts for the 16 calevents misses). The budget guard stops runs at $4.50/month; if it's tight, drop clubs whose stories never produce food.
+- [ ] Optional: add Groq's free tier (or GitHub Models) as a non-Google fallback for when every Gemini model is overloaded at once.
 - [ ] Two events still have no pin: "F580" (no building given) and "Inclusive Excellence Hub" (location unknown).
 - [ ] Duplicate event: "Trick or Treat with TannerTan36" is stored twice (Anna Head). Check why dedupe didn't merge them.
 - [ ] If GitHub's schedule stays too sparse (about every 6 hrs), trigger runs with Supabase pg_cron.

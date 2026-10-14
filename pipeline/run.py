@@ -12,11 +12,11 @@ A failing source is logged and skipped so the others still run.
 auto mode adapts to however often GitHub actually runs it (it promises hourly, often delivers ~6h).
 Each job runs when enough time has passed since it last ran (pipeline_state table):
   every run                       berkeley_events + gmail
-  >= 2.5h since last full run     + callink + calevents; extract everything pending (max 3 Gemini calls)
-  otherwise                       extract only urgent items (tonight/today/in N mins; max 1 call)
+  >= 2.5h since last full run     + callink + calevents; extract everything pending (max 6 Gemini calls)
+  otherwise                       extract only urgent items (tonight/today/in N mins; max 2 calls)
   >= 20h since posts, after 8am   + ig_posts
   >= 20h since stories, after 12pm + ig_stories (stories last 24h; also caps Apify spend)
-Gemini's free tier is ~20 requests/day/model; Flash-Lite takes any overflow.
+Gemini's free tier is ~20 requests/day per model; extract.MODELS chains 9 free models, so overflow moves down the chain.
 """
 import sys
 import traceback
@@ -76,7 +76,7 @@ def main(names: list[str], urgent_only: bool = False, after_fetch=None) -> int:
     if after_fetch:
         after_fetch()
     for step, fn in [("extract + store", lambda: dedupe.store(extract.run(urgent_only=urgent_only,
-                                                                            max_calls=1 if urgent_only else 3))),
+                                                                            max_calls=2 if urgent_only else 6))),
                      ("cleanup", cleanup)]:
         try:
             fn()

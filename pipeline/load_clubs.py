@@ -15,6 +15,11 @@ ACTIVE = {
     "ucbintloffice", "berkeleyesc", "csua.berkeley", "awe.berkeley", "ucb_swe", "ieeeucb",
     "colorstack_berkeley", "calrcsa", "ucberkeleyaaa", "cal_vsa", "csaberkeley", "isaberkeley",
     "calmsa", "berkeleyhillel",
+    # Added 2026-10-14. Not on calevents (so we scrape their posts too), likely to host food events:
+    "blackleadership.decal", "cal.igsa", "calcaribbeansa", "calhawaiiclub", "eastasiancaucus_ucb", "cal.lasr",
+    "ucbsouthindiansociety", "ucberkeley_tsa", "fgligrads", "ucbmsegsc", "cal_seabc", "usacasuc",
+    # Top food posters on calevents (posts come from there; we add their stories):
+    "calasce", "mtcberkeley", "hes_ucberkeley",
 }
 
 rows = {}
