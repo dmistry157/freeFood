@@ -1,11 +1,14 @@
 # TODO
 
 ## Sources to look into
-- [ ] **calevents.app** (https://www.calevents.app/): an aggregator of event info from Berkeley's student clubs, built by a student. It has no public API or feed listed. Ideas:
-  - Check whether its web app loads events from a JSON endpoint we could read politely (rate-limited).
-  - Check whether its calendar export works as a feed.
-  - Ask the creator whether they'd share a feed.
-  - It could cover many more clubs than our 20 Instagram accounts and public CalLink events, at no Apify cost.
+- [ ] **calevents.app** (https://www.calevents.app/): add it as a source. Looked into it on 2026-10-14.
+  - It's an aggregator built by a student, Sunny Jayaram. It scrapes Instagram for 1,000+ clubs and turns posts into structured events.
+  - It has an undocumented JSON API, the one its own site uses: `GET /api/events?direction=future&limit=50`. Paging uses the `nextCursor` value with `cursorDate` and `cursorCreatedAt`. No login is needed, and there's no robots.txt.
+  - Each event has: title, description, date, start_time, end_time, location, club_username, event_type, invite_type, the Instagram permalink, and CloudFront image URLs.
+  - Oct 14–21 sample: 118 events from 84 clubs; 40 mention food; only 4 of those come from clubs we already scrape. Every event had a time and a location. A full week took 3 requests.
+  - Plan: a `calevents` source that runs every 2.5 hrs (about 3 requests, 1s apart). Keep only food-keyword events, then send their text to Gemini for food_status (no images). Set the link to the Instagram permalink.
+  - Before relying on it: message the creator to ask permission and credit them. It's an unofficial API, so it could change without notice. Keep our Apify Instagram scraper as a fallback, or cut it back to save credit.
+  - Geocoder aliases its locations need: HMMB (Hearst Memorial Mining Building), HFA (Hearst Field Annex), Found Study, SoCo, The Den.
 
 ## App
 - [ ] Check the "not on the map" list in the simulator, then delete the TEST events (fingerprints `test-1`, `test-2`, `test-3`).
@@ -14,5 +17,7 @@
 - [ ] Phase 8: TestFlight. Needs the Apple Developer account ($99/yr).
 
 ## Pipeline
+- [ ] Two events still have no pin: "F580" (no building given) and "Inclusive Excellence Hub" (location unknown).
+- [ ] Duplicate event: "Trick or Treat with TannerTan36" is stored twice (Anna Head). Check why dedupe didn't merge them.
 - [ ] If GitHub's schedule stays too sparse (about every 6 hrs), trigger runs with Supabase pg_cron.
 - [ ] Update to checkout@v5 and setup-python@v6 to clear the Node 20 deprecation warning.
