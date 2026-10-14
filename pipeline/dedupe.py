@@ -113,7 +113,11 @@ def store(events: list[dict]) -> dict:
     counts = {"new": 0, "merged": 0, "on_map": 0, "list_only": 0}
     for ev in events:
         row = to_row(ev, texts.get(ev["raw_item_id"], ""))
-        counts[upsert(row)] += 1
+        try:
+            counts[upsert(row)] += 1
+        except Exception as err:  # one bad row shouldn't lose the rest
+            print(f"store failed for {row['title']!r}: {type(err).__name__}: {err}")
+            continue
         counts["on_map" if row["lat"] is not None else "list_only"] += 1
     print(f"dedupe: {counts['new']} new, {counts['merged']} merged; "
           f"{counts['on_map']} on map, {counts['list_only']} list-only")

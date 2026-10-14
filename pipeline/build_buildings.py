@@ -53,6 +53,10 @@ EXTRA = {
     "Unit 1": (37.86782, -122.25523),
     "Unit 2": (37.86605, -122.25488),
     "Unit 3": (37.86717, -122.26037),
+    # Off-campus spots clubs use (coordinates from OpenStreetMap Nominatim)
+    "Cornerstone": (37.86656, -122.26693),
+    "Tupper & Reed": (37.86814, -122.26755),
+    "2240 Piedmont Ave": (37.87070, -122.25278),
 }
 
 # Nicknames and old names people actually use on flyers.
@@ -84,7 +88,10 @@ ALIASES = {
     "Anthropology and Art Practice Building": ["Kroeber", "Kroeber Hall"],
     "Social Sciences Building": ["Barrows", "Barrows Hall", "SSB"],
     "Physics North & Physics South": ["LeConte", "LeConte Hall", "Physics North", "Physics South"],
-    "The Law Building": ["Boalt", "Boalt Hall", "Berkeley Law", "Law School"],
+    "The Law Building": ["Boalt", "Boalt Hall", "Berkeley Law", "Law School", "Goldberg", "Goldberg Room"],
+    "Anna Head School Building": ["Anna Head", "Anna Head Alumnae Hall"],
+    "Cornerstone": ["Cornerstone Berkeley", "Cornerstone Craft Beer"],
+    "2240 Piedmont Ave": ["2240 Piedmont", "Kadish Library", "Selznick Seminar Room"],
     "Bauer Wurster Hall": ["Wurster", "Wurster Hall"],
     "International House": ["I-House", "IHouse"],
     "Recreational Sports Facility": ["RSF"],

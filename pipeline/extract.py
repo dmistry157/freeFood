@@ -302,6 +302,10 @@ def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
         except RateLimited as err:
             print(f"Stopping: {err}. The remaining items wait for the next run.")
             break
+        except Exception as err:  # bad request, timeout, cut-off JSON: skip this batch, retry it next run
+            calls += 1
+            print(f"Batch {[it['id'] for it, _ in batch]} failed ({type(err).__name__}: {err}); retrying next run.")
+            continue
         calls += 1
         by_id = {it["id"]: it for it, _ in batch}
         for ev in raw:

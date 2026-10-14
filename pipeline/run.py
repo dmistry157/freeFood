@@ -63,7 +63,8 @@ def auto_plan(now: datetime) -> tuple[list[str], bool, list[str]]:
     return names, not full, stamps
 
 
-def main(names: list[str], urgent_only: bool = False) -> int:
+def main(names: list[str], urgent_only: bool = False, after_fetch=None) -> int:
+    """Returns the number of failed steps. after_fetch runs once the sources are done, before extraction."""
     failed = 0
     for name in names:
         try:
@@ -71,8 +72,16 @@ def main(names: list[str], urgent_only: bool = False) -> int:
         except Exception:
             failed += 1
             print(f"source {name} failed:\n{traceback.format_exc()}")
-    dedupe.store(extract.run(urgent_only=urgent_only, max_calls=1 if urgent_only else 3))
-    cleanup()
+    if after_fetch:
+        after_fetch()
+    for step, fn in [("extract + store", lambda: dedupe.store(extract.run(urgent_only=urgent_only,
+                                                                            max_calls=1 if urgent_only else 3))),
+                     ("cleanup", cleanup)]:
+        try:
+            fn()
+        except Exception:
+            failed += 1
+            print(f"{step} failed:\n{traceback.format_exc()}")
     return failed
 
 
@@ -83,9 +92,9 @@ if __name__ == "__main__":
         names, urgent_only, stamps = auto_plan(now)
         print(f"auto @ {now.astimezone(LA):%a %H:%M} PT: sources={names}, "
               f"extract={'urgent only' if urgent_only else 'all pending'}")
-        failed = main(names, urgent_only)
-        for key in stamps:  # stamp even if a source failed, so a broken scraper can't run (and bill) every hour
-            set_state(key, now)
+        # Stamp as soon as the sources finish, even if one failed or extraction later crashes,
+        # so a broken step can't make Apify scrape (and bill) again next run.
+        failed = main(names, urgent_only, after_fetch=lambda: [set_state(key, now) for key in stamps])
         sys.exit(1 if failed else 0)
     unknown = set(args) - set(SOURCES)
     if unknown:

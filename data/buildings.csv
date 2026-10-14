@@ -1,6 +1,7 @@
 name,aliases,lat,lng
 2150 Shattuck,,37.870030,-122.268646
 2176 Kittredge Street,,37.868226,-122.266491
+2240 Piedmont Ave,2240 Piedmont|Kadish Library|Selznick Seminar Room,37.870700,-122.252780
 2251 College Building (Archaeological Research Facility),,37.870199,-122.253847
 4.0 Hill,,37.871259,-122.256491
 88-Inch Cyclotron,,37.876597,-122.254227
@@ -20,7 +21,7 @@ Amistad House,,37.874394,-122.269070
 Anchor House,,37.872866,-122.266619
 Anderson Hall,,37.875855,-122.263789
 Andres Castro Arms,,37.869062,-122.250511
-Anna Head School Building,,37.866650,-122.256832
+Anna Head School Building,Anna Head|Anna Head Alumnae Hall,37.866650,-122.256832
 Anthony Hall,,37.870694,-122.258215
 Anthropology Reading Room,,37.869784,-122.255061
 Anthropology and Art Practice Building,Kroeber|Kroeber Hall,37.869819,-122.255449
@@ -100,6 +101,7 @@ Chu Hall,,37.876531,-122.247070
 Clark Kerr Campus,Clark Kerr|CKC,37.864230,-122.249350
 Cloyne Court,,37.876055,-122.257883
 Corder Building,,37.867106,-122.268192
+Cornerstone,Cornerstone Berkeley|Cornerstone Craft Beer,37.866560,-122.266930
 Cory Hall,Cory,37.875048,-122.257574
 Creekside Center,,37.870336,-122.261268
 Crew House,,37.862161,-122.249684
@@ -367,7 +369,7 @@ The Four Cedars,,37.878735,-122.268278
 The Gateway,Gateway|Gateway Building|CDSS Gateway,37.874138,-122.263479
 The Grassroots House,,37.862680,-122.268578
 The Lair,Bear's Lair,37.865014,-122.267975
-The Law Building,Boalt|Boalt Hall|Berkeley Law|Law School,37.869938,-122.253460
+The Law Building,Boalt|Boalt Hall|Berkeley Law|Law School|Goldberg|Goldberg Room,37.869938,-122.253460
 The Law Building South,,37.869665,-122.253487
 The Mark Twain Condominiums,,37.863701,-122.253318
 The Marsh Arts Center,,37.869402,-122.266992
@@ -383,6 +385,7 @@ Town and Gown Club,,37.865100,-122.260582
 Treehaven,,37.876399,-122.259564
 Trinity United Methodist Church,,37.867731,-122.261808
 Trumpetvine Court,,37.869838,-122.267581
+Tupper & Reed,,37.868140,-122.267550
 UC Berkeley Pollinator Garden,,37.871055,-122.262303
 UC Press,,37.872952,-122.267641
 Undergraduate Academic Building,,37.870819,-122.261661

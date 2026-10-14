@@ -7,6 +7,15 @@ from geocode import geocode
 
 MLK = "Martin Luther King Jr. Student Union"
 CASES = [
+    ("McCone 141", "McCone Hall"),
+    ("Birge 50", "Birge Hall"),
+    ("Goldberg 297", "The Law Building"),
+    ("Anna Head Alumnae Hall", "Anna Head School Building"),
+    ("cornerstone", "Cornerstone"),
+    ("Tupper & Reed", "Tupper & Reed"),
+    ("2240 Piedmont Ave Kadish Library / Philip Selznick Seminar Room", "2240 Piedmont Ave"),
+    ("South side of campus", None),
+    ("California 2026 kickoff", None),
     ("Pauley Ballroom, MLK Student Union", MLK),
     ("Martin Luther King Jr. Student Union, Tilden Room", MLK),
     ("Soda 306", "Soda Hall"),

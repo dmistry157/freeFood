@@ -37,6 +37,24 @@ def _index():
     return keys
 
 
+# Short hall names that are also ordinary words or street names; never match these alone.
+NOT_SHORT = {"california", "south", "senior", "minor", "christian", "philosophy", "north gate", "durant",
+             "durant residence", "oxford", "euclid", "tan", "chu", "lewis", "davis", "simon", "stern"}
+
+
+@lru_cache(maxsize=1)
+def _short():
+    """'mccone' -> McCone Hall, for "X Hall" buildings, used only when a room number follows ("McCone 141")."""
+    keys, out = _index(), {}
+    with CSV.open() as f:
+        for row in csv.DictReader(f):
+            m = re.match(r"^(.*\S) Hall$", row["name"])
+            k = normalize(m.group(1)) if m else None
+            if k and k not in keys and k not in NOT_SHORT:
+                out[k] = (row["name"], float(row["lat"]), float(row["lng"]))
+    return out
+
+
 def geocode(text: str | None) -> dict | None:
     if not text:
         return None
@@ -47,6 +65,12 @@ def geocode(text: str | None) -> dict | None:
     if hits:
         name, lat, lng = keys[max(hits, key=len)]
         return {"building": name, "lat": lat, "lng": lng, "match": "exact"}
+
+    short = _short()
+    hits = [k for k in short if re.search(rf" {re.escape(k)} [a-z]?\d", norm)]
+    if hits:
+        name, lat, lng = short[max(hits, key=len)]
+        return {"building": name, "lat": lat, "lng": lng, "match": "short + room"}
 
     # Fuzzy: drop room numbers and filler words, only compare against longer keys.
     query = re.sub(r"\b\d+[a-z]?\b", " ", NOISE.sub(" ", norm)).strip()
