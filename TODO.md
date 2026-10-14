@@ -11,7 +11,7 @@
   - Geocoder aliases its locations need: HMMB (Hearst Memorial Mining Building), HFA (Hearst Field Annex), Found Study, SoCo, The Den.
 
 ## App
-- [ ] Check the "not on the map" list in the simulator, then delete the TEST events (fingerprints `test-1`, `test-2`, `test-3`).
+- [x] Phase 7 verified in the simulator; TEST events deleted.
 - [ ] Test on a phone with Expo Go.
 - [ ] Add a README so friends can run the app.
 - [ ] Phase 8: TestFlight. Needs the Apple Developer account ($99/yr).
