@@ -47,6 +47,7 @@ Berkeley City College,,37.869811,-122.269686
 Berkeley Conference Center,,37.867848,-122.267349
 Berkeley Haas Entrepreneurship Hub,,37.870768,-122.253038
 Berkeley Hillel Reutlinger Center,Hillel|Berkeley Hillel,37.869234,-122.252960
+Berkeley Institute (2134 Allston Way),Berkeley Institute|2134 Allston|2134 Allston Way,37.869380,-122.266810
 Berkeley Lab Guest House,,37.875929,-122.250064
 Berkeley Law Library,,37.869765,-122.253373
 Berkeley Main Post Office,,37.868685,-122.270032
@@ -120,6 +121,7 @@ Dining Center & Suites,,37.863669,-122.249133
 Doc Hudson Field House,,37.870611,-122.249187
 Doe Memorial Library,Doe|Doe Library,37.872187,-122.259513
 Donner Laboratory,,37.874575,-122.256407
+Downtown Berkeley BART,Downtown Berkeley BART Station|Downtown BART,37.870100,-122.268140
 Downtown Berkeley Inn,,37.867551,-122.270059
 Durant Food Court,,37.868228,-122.258074
 Durant Hall,,37.871258,-122.260135
@@ -163,6 +165,7 @@ Foothill La Loma 1,,37.875908,-122.256486
 Foothill La Loma 2,,37.876342,-122.256537
 Foothill La Loma 3,,37.876311,-122.256057
 Foothill Student Housing,Foothill,37.875650,-122.255820
+Found Study (2201 Dwight Way),Found Study|2201 Dwight|2201 Dwight Way,37.864610,-122.264850
 Founder's Building,,37.867874,-122.264571
 Francis Kittredge Shattuck Building,,37.870869,-122.268600
 Free House,,37.869035,-122.254323
@@ -196,7 +199,7 @@ Hal and Audrey Norton House,,37.863921,-122.256085
 Hargrove Music Library,,37.870450,-122.256139
 Harmer E. Davis Transportation Library,,37.873817,-122.258931
 Haviland Hall,Haviland,37.873735,-122.261083
-Hearst Field Annex,HFA|Hearst Annex,37.869431,-122.258178
+Hearst Field Annex,HFA|Hearst Annex|QARC|Queer Alliance and Resource Center,37.869431,-122.258178
 Hearst Greek Theatre,Greek Theatre|Greek Theater,37.873692,-122.254251
 Hearst Memorial Gymnasium,Hearst Gym,37.869591,-122.256920
 Hearst Memorial Mining Building,Hearst Mining Building|HMMB,37.874454,-122.257265
@@ -336,8 +339,9 @@ Sigma Kappa Sorority,,37.867671,-122.250501
 Simon Hall,,37.869876,-122.252768
 Slottman Hall,,37.867554,-122.255255
 Smyth House,,37.867131,-122.247680
+SoCo (2170 Dwight Way),SoCo|2170 Dwight|2170 Dwight Way,37.863950,-122.265460
 Social Research Library,,37.873614,-122.261117
-Social Sciences Building,Barrows|Barrows Hall|SSB,37.870116,-122.257957
+Social Sciences Building,Barrows|Barrows Hall|SSB|SOCS,37.870116,-122.257957
 Soda Hall,Soda,37.875674,-122.258724
 South Gate Apartments,,37.867707,-122.257669
 South Hall,,37.871341,-122.258533
@@ -346,6 +350,7 @@ Spens-Black Hall,,37.867488,-122.260004
 Spieker Aquatics Complex,,37.868729,-122.262009
 Sproul Hall,,37.869592,-122.258821
 Sproul Plaza,Upper Sproul|Sproul,37.869500,-122.259240
+St. Mark's Episcopal Church,St. Mark's|St Marks|Saint Mark's|2300 Bancroft,37.867960,-122.263220
 Stadium Place,,37.867243,-122.266205
 Stanley Hall,Stanley,37.873983,-122.256113
 Stebbins Hall,,37.876381,-122.259300
@@ -353,6 +358,7 @@ Stephens Hall,Stephens,37.871334,-122.257580
 Stern Hall,,37.874812,-122.255171
 Strawberry Canyon Recreation Center,,37.871555,-122.247024
 Stuart Pratt Manor,,37.866208,-122.269298
+Student Environmental Resource Center (SERC),SERC|SERC Space|2440 Bancroft,37.868350,-122.260470
 Student Services Building,,37.871460,-122.253510
 Studio Building,,37.871449,-122.267452
 Sutardja Dai Hall (CITRIS),SDH|Sutardja Dai|Sutardja Dai Hall|CITRIS,37.874898,-122.258400
@@ -408,6 +414,7 @@ Wellman Hall,Wellman,37.873125,-122.262781
 Wesley House,,37.868181,-122.261694
 Weston Havens House,,37.869065,-122.247371
 Wheeler Hall,Wheeler,37.871308,-122.259168
+Willard Park,,37.861030,-122.256640
 Witter Rugby Field,,37.871211,-122.248663
 Wm. Penn Apts,,37.863059,-122.265377
 Wolf House,,37.868371,-122.252876

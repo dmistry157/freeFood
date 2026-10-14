@@ -57,6 +57,13 @@ EXTRA = {
     "Cornerstone": (37.86656, -122.26693),
     "Tupper & Reed": (37.86814, -122.26755),
     "2240 Piedmont Ave": (37.87070, -122.25278),
+    "Willard Park": (37.86103, -122.25664),
+    "Found Study (2201 Dwight Way)": (37.86461, -122.26485),
+    "SoCo (2170 Dwight Way)": (37.86395, -122.26546),
+    "Berkeley Institute (2134 Allston Way)": (37.86938, -122.26681),
+    "St. Mark's Episcopal Church": (37.86796, -122.26322),
+    "Downtown Berkeley BART": (37.87010, -122.26814),
+    "Student Environmental Resource Center (SERC)": (37.86835, -122.26047),
 }
 
 # Nicknames and old names people actually use on flyers.
@@ -86,12 +93,18 @@ ALIASES = {
     "The Campanile (Sather Tower)": ["Campanile", "Sather Tower"],
     "Valley Life Sciences Building": ["VLSB", "Valley Life Sciences"],
     "Anthropology and Art Practice Building": ["Kroeber", "Kroeber Hall"],
-    "Social Sciences Building": ["Barrows", "Barrows Hall", "SSB"],
+    "Social Sciences Building": ["Barrows", "Barrows Hall", "SSB", "SOCS"],
     "Physics North & Physics South": ["LeConte", "LeConte Hall", "Physics North", "Physics South"],
     "The Law Building": ["Boalt", "Boalt Hall", "Berkeley Law", "Law School", "Goldberg", "Goldberg Room"],
     "Anna Head School Building": ["Anna Head", "Anna Head Alumnae Hall"],
     "Cornerstone": ["Cornerstone Berkeley", "Cornerstone Craft Beer"],
     "2240 Piedmont Ave": ["2240 Piedmont", "Kadish Library", "Selznick Seminar Room"],
+    "Found Study (2201 Dwight Way)": ["Found Study", "2201 Dwight", "2201 Dwight Way"],
+    "SoCo (2170 Dwight Way)": ["SoCo", "2170 Dwight", "2170 Dwight Way"],
+    "Berkeley Institute (2134 Allston Way)": ["Berkeley Institute", "2134 Allston", "2134 Allston Way"],
+    "St. Mark's Episcopal Church": ["St. Mark's", "St Marks", "Saint Mark's", "2300 Bancroft"],
+    "Downtown Berkeley BART": ["Downtown Berkeley BART Station", "Downtown BART"],
+    "Student Environmental Resource Center (SERC)": ["SERC", "SERC Space", "2440 Bancroft"],
     "Bauer Wurster Hall": ["Wurster", "Wurster Hall"],
     "International House": ["I-House", "IHouse"],
     "Recreational Sports Facility": ["RSF"],
@@ -121,7 +134,7 @@ ALIASES = {
     "Koshland Hall": ["Koshland"],
     "Stephens Hall": ["Stephens"],
     "California Hall": ["Cal Hall"],
-    "Hearst Field Annex": ["HFA", "Hearst Annex"],
+    "Hearst Field Annex": ["HFA", "Hearst Annex", "QARC", "Queer Alliance and Resource Center"],
     "Berkeley Way West": ["BWW"],
     "David Blackwell Hall": ["Blackwell", "Blackwell Hall"],
     "Berkeley Hillel Reutlinger Center": ["Hillel", "Berkeley Hillel"],
@@ -136,7 +149,7 @@ ALIASES = {
 }
 
 
-def main():
+def fetch_osm() -> dict:
     for url in OVERPASS:
         try:
             resp = requests.post(url, data={"data": QUERY}, timeout=120,
@@ -155,6 +168,17 @@ def main():
         if name in rows or name in SKIP or SKIP_RE.search(name) or "lat" not in c:
             continue
         rows[name] = (c["lat"], c["lon"])
+    return rows
+
+
+def saved_rows() -> dict:
+    """The places already in the CSV (for --offline, when Overpass is down)."""
+    with OUT.open() as f:
+        return {r["name"]: (float(r["lat"]), float(r["lng"])) for r in csv.DictReader(f)}
+
+
+def main(offline: bool = False):
+    rows = saved_rows() if offline else fetch_osm()
     rows.update(EXTRA)
 
     missing = set(ALIASES) - set(rows)
@@ -171,4 +195,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(offline="--offline" in sys.argv)  # --offline: reuse saved places, just re-apply EXTRA + ALIASES

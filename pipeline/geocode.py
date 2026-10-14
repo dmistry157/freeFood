@@ -38,8 +38,8 @@ def _index():
 
 
 # Short hall names that are also ordinary words or street names; never match these alone.
-NOT_SHORT = {"california", "south", "senior", "minor", "christian", "philosophy", "north gate", "durant",
-             "durant residence", "oxford", "euclid", "tan", "chu", "lewis", "davis", "simon", "stern"}
+NOT_SHORT = {"california", "south", "senior", "christian", "philosophy", "north gate", "durant",
+             "durant residence", "oxford", "euclid", "tan", "chu"}
 
 
 @lru_cache(maxsize=1)

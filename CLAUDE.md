@@ -14,6 +14,7 @@ sources ──► raw_items (Supabase) ──► Gemini extraction ──► geo
   - `berkeley_events.py`: events.berkeley.edu, LiveWhale JSON, 7 days ahead.
   - `gmail.py`: the owner's bmail `FreeFood` label only. It needs the owner's OAuth credentials, so skip it locally.
   - `callink.py`: public CalLink events, which include coordinates.
+  - `calevents.py`: calevents.app, an aggregator of 1,000+ clubs' Instagram events. We read the JSON its own site uses (unofficial), about 3 requests every 2.5 hrs, keeping only events with food keywords. Text only, no images.
   - `instagram.py`: 20 club accounts via Apify, posts and stories once a day. Spending is capped by `apify_budget.py` (≤ $4.50/month, ≤ $0.25/run).
 - **Extraction** (`extract.py`): Gemini free tier, batched, falling back from `gemini-3.5-flash` → `-flash-lite` → `3.1-flash-lite`. Every event gets a `food_status` of `stated` or `likely`. "Likely" covers info sessions, "over lunch" and similar, and the app labels those "Food likely · not confirmed".
 - **Geocoding** (`geocode.py`): matches location text against `data/buildings.csv` (415 campus places from OpenStreetMap plus aliases). Events with no match have no lat/lng and appear in the app's "not on the map" list.
