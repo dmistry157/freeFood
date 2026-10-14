@@ -1,7 +1,9 @@
 # TODO
 
 ## Sources to look into
-- [ ] **calevents.app** (https://www.calevents.app/): add it as a source. Looked into it on 2026-10-14.
+- [x] **calevents.app** (https://www.calevents.app/): added as a source on 2026-10-14 (`pipeline/sources/calevents.py`). Instagram posts now skip the clubs it covers.
+- [ ] Message calevents' creator to ask permission and credit them.
+- Notes from looking into it:
   - It's an aggregator built by a student, Sunny Jayaram. It scrapes Instagram for 1,000+ clubs and turns posts into structured events.
   - It has an undocumented JSON API, the one its own site uses: `GET /api/events?direction=future&limit=50`. Paging uses the `nextCursor` value with `cursorDate` and `cursorCreatedAt`. No login is needed, and there's no robots.txt.
   - Each event has: title, description, date, start_time, end_time, location, club_username, event_type, invite_type, the Instagram permalink, and CloudFront image URLs.
