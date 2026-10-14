@@ -19,6 +19,7 @@ import requests
 
 from pipeline.apify_budget import BudgetExceeded, run_actor
 from pipeline.db import HEADERS, REST, existing_source_ids, insert_raw_items, upload_media
+from pipeline.sources import calevents
 
 SOURCE = "instagram"
 POSTS_ACTOR = "sones/instagram-posts-scraper-lowcost"
@@ -90,6 +91,13 @@ def fetch_stories(handles: list[str]) -> list[dict]:
 
 def run(kind: str) -> int:
     handles = active_handles()
+    if kind == "posts":  # stories stay on every club: calevents only reads posts
+        covered = calevents.covered_handles()
+        skipped = [h for h in handles if h.lower() in covered]
+        handles = [h for h in handles if h.lower() not in covered]
+        print(f"{SOURCE} posts: {len(skipped)} clubs covered by calevents, scraping {handles}")
+        if not handles:
+            return 0
     try:
         found = fetch_posts(handles) if kind == "posts" else fetch_stories(handles)
     except BudgetExceeded as err:

@@ -36,6 +36,7 @@ MAX_BATCH_IMAGES = 8
 LA = ZoneInfo("America/Los_Angeles")
 MIN_CONFIDENCE = 0.6
 DEFAULT_DURATION = timedelta(hours=1)
+STALE_POST = timedelta(days=7)  # Instagram items not read within a week are dropped unread
 MAX_IMAGES = 4
 MAX_SIDE = 1024
 BANNER_RATIO = 2.2
@@ -266,6 +267,10 @@ def listed_start(item: dict) -> datetime | None:
     return parse_time(m.group(1)) if m else None
 
 
+def posted(item: dict) -> datetime | None:
+    return parse_time(item.get("posted_at"))
+
+
 def priority(item: dict):
     """Urgent first, then soonest listed start, then newest posts."""
     start = listed_start(item)
@@ -281,14 +286,15 @@ def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
     max_calls: Gemini calls allowed this run; the rest wait for the next run."""
     now = datetime.now(timezone.utc)
     items = fetch_items(limit, ids)
-    done_without_llm = [it for it in items if not needs_llm(it) or ((listed_start(it) or now) < now - DEFAULT_DURATION)]
+    done_without_llm = [it for it in items if not needs_llm(it) or ((listed_start(it) or now) < now - DEFAULT_DURATION)
+                        or (it["source"] == "instagram" and posted(it) and posted(it) < now - STALE_POST)]
     if not dry_run:
         for it in done_without_llm:
             mark_processed(it)
     todo = sorted((it for it in items if it not in done_without_llm), key=priority)
     if urgent_only:
         todo = [it for it in todo if URGENT.search(it["text"] or "")]
-    print(f"extract: {len(items)} pending, {len(done_without_llm)} done without Gemini (no keywords / already over), "
+    print(f"extract: {len(items)} pending, {len(done_without_llm)} done without Gemini (no keywords / already over / stale), "
           f"{len(todo)} to Gemini{' (urgent only)' if urgent_only else ''}, max {max_calls or 'unlimited'} calls")
 
     results, calls = [], 0

@@ -45,6 +45,19 @@ def fetch() -> list[dict]:
     return [e for e in unique.values() if e["date"] <= horizon]
 
 
+def covered_handles() -> set[str]:
+    """Instagram accounts calevents already turns into events (so our Apify posts scrape can skip them).
+    Empty set if calevents is unreachable, so our scraper falls back to covering everyone."""
+    try:
+        resp = requests.get(f"{API.rsplit('/', 1)[0]}/accounts", headers=HEADERS, timeout=30)
+        resp.raise_for_status()
+        return {a["club_username"].lower() for a in resp.json()
+                if (a.get("past_event_count") or 0) + (a.get("upcoming_event_count") or 0) > 0}
+    except (requests.RequestException, ValueError, KeyError, TypeError) as err:
+        print(f"{SOURCE}: couldn't load accounts ({err}); Instagram posts will cover every club")
+        return set()
+
+
 def local_time(date: str, hhmm: str | None) -> str | None:
     if not hhmm:
         return None
