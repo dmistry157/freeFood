@@ -23,6 +23,7 @@ sources ──► raw_items (Supabase) ──► Gemini extraction ──► geo
 - **App** (`app/`): Expo SDK 57, TypeScript, react-native-maps (Apple Maps). Main files: `App.tsx` and `src/` (`events.ts`, `theme.ts`, `components/`). It reads events straight from Supabase's REST API with the read-only publishable key. Before changing app code, see `app/AGENTS.md` (Expo-version rules).
 
 ## Setup
+- **Publish the app** (friends open it in Expo Go, no laptop needed): `cd app && npx eas-cli@latest update --channel production --environment production --message "..."`. Expo project `@dhilens-team/freefood`; the two `EXPO_PUBLIC_*` values live in its EAS `production` environment. Link that always opens the latest version: `exp://u.expo.dev/789ba935-9128-4c2a-8862-db0a48fb7770?channel-name=production&runtime-version=1.0.0`. If you change `version` in `app.json`, update `runtime-version` in that link.
 - **App:** `cd app && npm install`. Create `app/.env` from `app/.env.example`; the owner sends the two values. Then `npx expo start` and scan the QR code with Expo Go.
 - **Pipeline:**
   1. `python3 -m venv .venv && .venv/bin/pip install -r pipeline/requirements.txt`.

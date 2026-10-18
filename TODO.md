@@ -14,7 +14,8 @@
 
 ## App
 - [x] Phase 7 verified in the simulator; TEST events deleted.
-- [ ] Test on a phone with Expo Go.
+- [x] Published with EAS Update (2026-10-17); opens in Expo Go without the laptop (tested in the simulator).
+- [ ] Test the published link on a real iPhone, yours and one friend's (Apple may block opening another account's project in Expo Go).
 - [ ] Add a README so friends can run the app.
 - [ ] Phase 8: TestFlight. Needs the Apple Developer account ($99/yr).
 

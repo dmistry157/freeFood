@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "Berkeley Free Food",
+    "slug": "freefood",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,6 +23,22 @@
     },
     "plugins": [
       "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "789ba935-9128-4c2a-8862-db0a48fb7770"
+      }
+    },
+    "owner": "dhilens-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/789ba935-9128-4c2a-8862-db0a48fb7770"
+    },
+    "platforms": [
+      "ios",
+      "android"
     ]
   }
 }
