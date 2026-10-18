@@ -19,6 +19,7 @@
 - [ ] Phase 8: TestFlight. Needs the Apple Developer account ($99/yr).
 
 ## Pipeline
+- [ ] CalLink's API started redirecting to a CalNet login on 2026-10-16, so it's turned off in `auto_plan` (the code stays; it also skips itself on the login redirect). It was ~3 items/2 weeks. Re-enable if the site goes public again.
 - [ ] Around 2026-10-21, check Apify spend now that 36 clubs are active (stories for all, posts for the 16 calevents misses). The budget guard stops runs at $4.50/month; if it's tight, drop clubs whose stories never produce food.
 - [ ] Optional: add Groq's free tier (or GitHub Models) as a non-Google fallback for when every Gemini model is overloaded at once.
 - [ ] Two events still have no pin: "F580" (no building given) and "Inclusive Excellence Hub" (location unknown).

@@ -26,10 +26,14 @@ def fetch() -> list[dict]:
     now = datetime.now(timezone.utc)
     events, skip = [], 0
     while True:
-        resp = requests.get(API, headers=HEADERS, timeout=30, params={
+        resp = requests.get(API, headers=HEADERS, timeout=30, allow_redirects=False, params={
             "endsAfter": now.isoformat(), "orderByField": "startsOn", "orderByDirection": "ascending",
             "status": "Approved", "take": PAGE, "skip": skip,
         })
+        if resp.is_redirect and "login" in resp.headers.get("Location", ""):
+            # Since 2026-10-16 the API redirects to a CalNet login; skip rather than fail the whole run.
+            print(f"{SOURCE}: API now requires login; skipping")
+            return []
         resp.raise_for_status()
         body = resp.json()
         events += body["value"]

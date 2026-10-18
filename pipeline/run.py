@@ -2,7 +2,7 @@
 
 Run from the repo root, choosing which sources to fetch this run (cron decides the cadence):
   .venv/bin/python -m pipeline.run berkeley_events gmail
-  .venv/bin/python -m pipeline.run callink calevents
+  .venv/bin/python -m pipeline.run calevents
   .venv/bin/python -m pipeline.run ig_posts
   .venv/bin/python -m pipeline.run ig_stories
   .venv/bin/python -m pipeline.run            # no sources: just extract pending items + cleanup
@@ -12,7 +12,7 @@ A failing source is logged and skipped so the others still run.
 auto mode adapts to however often GitHub actually runs it (it promises hourly, often delivers ~6h).
 Each job runs when enough time has passed since it last ran (pipeline_state table):
   every run                       berkeley_events + gmail
-  >= 2.5h since last full run     + callink + calevents; extract everything pending (max 6 Gemini calls)
+  >= 2.5h since last full run     + calevents; extract everything pending (max 6 Gemini calls)
   otherwise                       extract only urgent items (tonight/today/in N mins; max 2 calls)
   >= 20h since posts, after 8am   + ig_posts
   >= 20h since stories, after 12pm + ig_stories (stories last 24h; also caps Apify spend)
@@ -53,7 +53,7 @@ def auto_plan(now: datetime) -> tuple[list[str], bool, list[str]]:
     names, stamps = ["berkeley_events", "gmail"], []
     full = due("last_full_extract", FULL_EVERY, now)
     if full:
-        names += ["callink", "calevents"]
+        names.append("calevents")  # callink is off: its site needs a CalNet login since 2026-10-16
         stamps.append("last_full_extract")
     if hour >= 8 and due("last_ig_posts", IG_EVERY, now):
         names.append("ig_posts")
