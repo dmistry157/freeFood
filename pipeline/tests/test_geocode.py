@@ -8,6 +8,8 @@ from geocode import geocode
 MLK = "Martin Luther King Jr. Student Union"
 CASES = [
     ("McCone 141", "McCone Hall"),
+    ("Physics 375", "Physics North & Physics South"),
+    ("Physics Building, Room 375", "Physics North & Physics South"),
     ("Birge 50", "Birge Hall"),
     ("Goldberg 297", "The Law Building"),
     ("Anna Head Alumnae Hall", "Anna Head School Building"),
