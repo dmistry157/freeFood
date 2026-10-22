@@ -20,6 +20,8 @@ ACTIVE = {
     "ucbsouthindiansociety", "ucberkeley_tsa", "fgligrads", "ucbmsegsc", "cal_seabc", "usacasuc",
     # Top food posters on calevents (posts come from there; we add their stories):
     "calasce", "mtcberkeley", "hes_ucberkeley",
+    # Added 2026-10-22: on calevents but it missed their ice cream social (stories only; calevents has posts):
+    "sps_berkeley", "musaberkeley",
 }
 
 rows = {}
