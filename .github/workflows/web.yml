@@ -1,6 +1,6 @@
 # Builds the web version of the app and publishes dhilen.com on GitHub Pages:
 #   dhilen.com/                  -> site/index.html (redirects to LinkedIn)
-#   dhilen.com/berkeleyfreefood/ -> app/ exported for web
+#   dhilen.com/freefood/ -> app/ exported for web
 # The two EXPO_PUBLIC_* values are the app's read-only Supabase URL and publishable key,
 # stored as repository *variables* (Settings > Secrets and variables > Actions > Variables).
 name: web
@@ -38,7 +38,7 @@ jobs:
       - name: Export web build
         working-directory: app
         env:
-          WEB_BASE_URL: /berkeleyfreefood
+          WEB_BASE_URL: /freefood
           EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: |
@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -R site/. _site/
-          cp -R app/dist _site/berkeleyfreefood
+          cp -R app/dist _site/freefood
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
