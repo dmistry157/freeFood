@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 from pipeline.db import insert_raw_items
-from pipeline.extract import FOOD, LIKELY
+from pipeline.extract import FOOD
 
 SOURCE = "calevents"
 API = "https://www.calevents.app/api/events"
@@ -82,7 +82,8 @@ def local_time(date: str, hhmm: str | None) -> str | None:
 def to_raw_item(e: dict) -> dict | None:
     location = (e.get("location") or "").strip()
     text = f"{e['title']}\n{e.get('description') or ''}"
-    if location.lower() in ONLINE or not (FOOD.search(text) or LIKELY.search(text)):
+    # Club events need food actually mentioned (extract.keep drops "likely" for clubs), so skip LIKELY-only ones.
+    if location.lower() in ONLINE or not FOOD.search(text):
         return None
     posts = e.get("source_posts") or []
     url = posts[0]["permalink"] if posts and posts[0].get("permalink") else e.get("link") or ""

@@ -8,7 +8,7 @@ Flow per unprocessed raw item:
      {"events": [...]} tagged with item_id (a newsletter can hold several events).
      When a model's daily quota runs out, fall back to the next model; if all are out, stop
      and leave the rest for the next run.
-  4. Keep events with food_status stated|likely, confidence >= 0.6, not already over.
+  4. Keep events with food_status stated|likely (club events: stated only), confidence >= 0.6, not already over.
 Stored Instagram images are deleted after they're read.
 
 Run from the repo root:  .venv/bin/python -m pipeline.extract [--dry-run] [--limit N] [--ids 1,2,3]
@@ -70,6 +70,9 @@ For each event:
   celebrations/festivals, and events framed around a meal ("over lunch", "lunch talk") unless they say to
   bring your own. "none" otherwise.
   Food that must be bought (bake sale, fundraiser, restaurant outing) is "none".
+  For events run by a student club, use "stated" only when the text or flyer actually offers food; never infer it.
+- host: "club" if a student club/organization runs it (including GMs, club socials, club info sessions),
+  "university" for departments, campus offices and programs, "company" for employer-run events, else "other".
 - food_reason: short quote or reason for food_status.
 - start/end: ISO 8601 with offset in America/Los_Angeles. Copy times exactly as written (6-7:30pm -> 18:00 to 19:30). Resolve relative dates ("tomorrow", "this
   Thursday", "TONIGHT") from the item's posted time. end = "" if unknown.
@@ -86,10 +89,11 @@ EVENT_SCHEMA = {
     "type": "object",
     "properties": {"events": {"type": "array", "items": {"type": "object", "properties": {
         k: {"type": "number"} if k == "confidence" else
-        {"type": "string", "enum": ["stated", "likely", "none"]} if k == "food_status" else {"type": "string"}
-        for k in ["item_id", "title", "food_status", "food_reason", "start", "end", "building", "room", "food",
+        {"type": "string", "enum": ["stated", "likely", "none"]} if k == "food_status" else
+        {"type": "string", "enum": ["club", "university", "company", "other"]} if k == "host" else {"type": "string"}
+        for k in ["item_id", "title", "host", "food_status", "food_reason", "start", "end", "building", "room", "food",
                   "requirements", "link", "open_to", "confidence"]
-    }, "required": ["item_id", "title", "food_status", "start", "confidence"]}}},
+    }, "required": ["item_id", "title", "host", "food_status", "start", "confidence"]}}},
     "required": ["events"],
 }
 
@@ -214,9 +218,16 @@ def parse_time(s: str | None) -> datetime | None:
         return None
 
 
-def keep(ev: dict, now: datetime) -> dict | None:
+CLUB_SOURCES = {"instagram", "calevents"}  # assumed club-run if Gemini didn't say
+
+
+def keep(ev: dict, now: datetime, source: str = "") -> dict | None:
     start = parse_time(ev.get("start"))
     if ev.get("food_status") not in ("stated", "likely") or ev.get("confidence", 0) < MIN_CONFIDENCE or not start:
+        return None
+    # Club events (GMs, socials, ...) only count when food is actually offered, so nobody walks into a
+    # random club meeting expecting food.
+    if ev.get("food_status") != "stated" and (ev.get("host") or ("club" if source in CLUB_SOURCES else "")) == "club":
         return None
     end = parse_time(ev.get("end")) or start + DEFAULT_DURATION
     if end <= start:
@@ -331,7 +342,7 @@ def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
         by_id = {it["id"]: it for it, _ in batch}
         for ev in raw:
             item = by_id.get(int(ev["item_id"])) if str(ev.get("item_id", "")).isdigit() else None
-            kept = keep(ev, now) if item else None
+            kept = keep(ev, now, item["source"]) if item else None
             if kept:
                 results.append({**kept, "raw_item_id": item["id"], "source": item["source"]})
         if not dry_run:
