@@ -19,7 +19,7 @@ export function UnplacedList({ events, now, visible, onClose }: {
             <Text style={styles.doneText}>Done</Text>
           </Pressable>
         </View>
-        <Text style={styles.sub}>These listings didn't name a campus building we recognize.</Text>
+        <Text style={styles.sub}>These listings didn’t name a campus building we recognize.</Text>
         <ScrollView contentContainerStyle={styles.list}>
           {events.map((e) => (
             <View key={e.id} style={styles.item}>

@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../theme';
 
 /** Map pin from the design: white-ringed dot, red + pulsing halo when live, grey when soon. */
 export function Pin({ live, selected }: { live: boolean; selected: boolean }) {
-  const pulse = useRef(new Animated.Value(0)).current;
+  const [pulse] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (!live) return;

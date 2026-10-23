@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFonts, Geist_400Regular, Geist_500Medium, Geist_600SemiBold, Geist_700Bold } from '@expo-google-fonts/geist';
@@ -8,6 +7,7 @@ import { GeistMono_500Medium } from '@expo-google-fonts/geist-mono';
 
 import { CAMPUS, colors, fonts, shadow } from './src/theme';
 import { FoodEvent, fetchEvents, isLive, spreadPins } from './src/events';
+import MapView, { Marker, Region } from './src/components/Map';
 import { Pin } from './src/components/Pin';
 import { EventCard } from './src/components/EventCard';
 import { UnplacedList } from './src/components/UnplacedList';

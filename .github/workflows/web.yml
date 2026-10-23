@@ -1,0 +1,57 @@
+# Builds the web version of the app and publishes dhilen.com on GitHub Pages:
+#   dhilen.com/                  -> site/index.html (redirects to LinkedIn)
+#   dhilen.com/berkeleyfreefood/ -> app/ exported for web
+# The two EXPO_PUBLIC_* values are the app's read-only Supabase URL and publishable key,
+# stored as repository *variables* (Settings > Secrets and variables > Actions > Variables).
+name: web
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", "site/**", ".github/workflows/web.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - name: Export web build
+        working-directory: app
+        env:
+          WEB_BASE_URL: /berkeleyfreefood
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          test -n "$EXPO_PUBLIC_SUPABASE_URL" && test -n "$EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" \
+            || { echo "Add the EXPO_PUBLIC_* repository variables first"; exit 1; }
+          npx expo export --platform web --output-dir dist
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -R site/. _site/
+          cp -R app/dist _site/berkeleyfreefood
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

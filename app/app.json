@@ -19,7 +19,11 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Berkeley Free Food",
+      "shortName": "Free Food",
+      "themeColor": "#EEECE6",
+      "backgroundColor": "#EEECE6"
     },
     "plugins": [
       "expo-font"
@@ -38,7 +42,8 @@
     },
     "platforms": [
       "ios",
-      "android"
+      "android",
+      "web"
     ]
   }
 }
