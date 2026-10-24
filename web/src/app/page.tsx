@@ -10,11 +10,16 @@ import { distanceFt } from "@/lib/geo";
 import { useEvents } from "@/lib/useEvents";
 import { useLocation } from "@/lib/useLocation";
 
-// MapLibre needs a browser, and the site is a static export, so load it client-side only.
-const CampusMap = dynamic(() => import("@/components/CampusMap"), {
-  ssr: false,
-  loading: () => <div className="size-full bg-paper-2" />,
-});
+// Both maps need a browser, and the site is a static export, so load client-side only.
+// Google draws this campus well out of the box, but its key needs a billing account,
+// so it is opt-in: set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY and the site switches over.
+// Without one we stay on MapLibre and OpenFreeMap, which cost nothing.
+const USE_GOOGLE = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
+
+const CampusMap = dynamic(
+  () => (USE_GOOGLE ? import("@/components/GoogleCampusMap") : import("@/components/CampusMap")),
+  { ssr: false, loading: () => <div className="size-full bg-paper-2" /> },
+);
 
 export default function Home() {
   const { events, now, error, loading } = useEvents();
