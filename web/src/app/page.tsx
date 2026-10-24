@@ -84,8 +84,10 @@ export default function Home() {
       {/* Modelled on CalCentral: a navy bar with the wordmark, then a thin white
           strip for status. Familiar, and only two controls. */}
       <header className="shrink-0">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 bg-navy px-4 py-3 md:px-7 md:py-3.5">
-          <h1 className="text-xl font-semibold tracking-[1.5px] md:text-2xl">
+        {/* Centred while it is stacked on a phone; back to wordmark-left,
+            controls-right once there is room for one row. */}
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 bg-navy px-4 py-3 md:justify-between md:px-7 md:py-3.5">
+          <h1 className="w-full text-center text-xl font-semibold tracking-[1.5px] md:w-auto md:text-left md:text-2xl">
             <span className="text-gold">BERKELEY</span>
             <span className="text-white"> FREE FOOD</span>
           </h1>
@@ -113,7 +115,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-rule bg-paper px-4 py-2.5 md:px-7">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b border-rule bg-paper px-4 py-2.5 md:justify-between md:px-7">
           <p className="text-sm text-muted md:text-[15px]">
             {loading
               ? "Loading…"
