@@ -1,30 +1,32 @@
 @import "tailwindcss";
 
-/* Berkeley read as print rather than as app chrome: warm paper, deep navy ink,
-   gold used sparingly as an accent. The navy is deliberately darker than the
-   official #003262. Square corners throughout — the only circles are map pins. */
+/* Modelled on CalCentral: a dark navy bar over plain white, which is the
+   interface every Berkeley student already knows. Square corners throughout —
+   the only circles are map pins. */
 @theme {
-  /* Paper */
-  --color-paper: #faf8f3;
-  --color-paper-2: #f1ece0;
-  --color-rule: #ded6c5;
-  --color-rule-soft: #eae3d6;
+  /* Surfaces: CalCentral's familiar white, with a light grey tint for rows. */
+  --color-paper: #ffffff;
+  --color-paper-2: #eef1f4;
+  --color-rule: #d3d8de;
+  --color-rule-soft: #e6e9ed;
 
-  /* Navy, dark to light */
-  --color-navy-deep: #00152b;
-  --color-navy: #001e3c;
-  --color-navy-mid: #123a63;
-  --color-ink: #0a1a2b;
-  --color-ink-soft: #2a3f56;
-  --color-muted: #4e6378;
-  --color-label: #72849a;
+  /* Navy bar and its lighter companion, as on CalCentral. */
+  --color-navy-deep: #001b36;
+  --color-navy: #00264c;
+  --color-navy-mid: #15639d;
+
+  /* Ink */
+  --color-ink: #1a2330;
+  --color-ink-soft: #33414f;
+  --color-muted: #525f6d;
+  --color-label: #6e7b89;
 
   /* Gold: bright for fills, dark for text that must pass contrast */
   --color-gold: #fdb515;
   --color-gold-deep: #d99400;
   --color-gold-ink: #7a5205;
 
-  /* Campus greens, for the Glade and the other lawns */
+  /* Campus greens, for the glades */
   --color-lawn: #cfe0b4;
   --color-lawn-deep: #b6cf95;
 

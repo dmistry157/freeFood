@@ -76,50 +76,55 @@ export default function Home() {
 
   return (
     <main className="flex h-dvh flex-col bg-paper">
-      {/* Masthead: a printed header, not a toolbar. Paper, navy ink, one hairline rule. */}
-      <header className="flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-navy px-4 pb-3 pt-4 md:px-7 md:pb-4 md:pt-5">
-        <div className="flex items-center gap-3">
-          <svg aria-hidden viewBox="0 0 64 64" className="size-8 shrink-0">
-            <rect width="64" height="64" fill="var(--color-navy-deep)" />
-            <path
-              d="M32 14c-7.18 0-13 5.82-13 13 0 9.37 11.07 22.92 12.19 24.27a1.06 1.06 0 0 0 1.62 0C33.93 49.92 45 36.37 45 27c0-7.18-5.82-13-13-13z"
-              fill="var(--color-gold)"
+      {/* Modelled on CalCentral: a navy bar with the wordmark, then a thin white
+          strip for status. Familiar, and only two controls. */}
+      <header className="shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 bg-navy px-4 py-3 md:px-7 md:py-3.5">
+          <h1 className="text-xl font-semibold tracking-[1.5px] md:text-2xl">
+            <span className="text-gold">BERKELEY</span>
+            <span className="text-white"> FREE FOOD</span>
+          </h1>
+
+          <div className="flex items-stretch gap-2">
+            <LocateButton
+              status={status}
+              onClick={() => (coords ? focusOn(coords.lat, coords.lng, 16) : request())}
             />
-            <circle cx="32" cy="26.6" r="5.2" fill="var(--color-navy-deep)" />
-          </svg>
-          <div>
-            <h1 className="text-[21px] font-semibold leading-none tracking-[-0.6px] text-navy-deep md:text-[26px]">
-              Berkeley Free Food
-            </h1>
-            <p className="mt-1.5 text-[13px] leading-none text-muted md:text-sm">
-              {loading
-                ? "Loading…"
-                : `${ordered.length} event${ordered.length === 1 ? "" : "s"} in the next 6 hours` +
-                  (liveCount ? ` · ${liveCount} now` : "")}
-            </p>
+            <button
+              type="button"
+              onClick={() => setListOpen((v) => !v)}
+              aria-expanded={listOpen}
+              className="flex h-10 items-center gap-2 border border-white/40 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 16 16"
+                className="size-4 fill-none stroke-current stroke-[1.8]"
+              >
+                <path d="M2 4h12M2 8h12M2 12h12" strokeLinecap="round" />
+              </svg>
+              {listOpen ? "Hide list" : "Show list"}
+            </button>
           </div>
         </div>
 
-        <div className="flex items-stretch gap-2">
-          <LocateButton
-            status={status}
-            onClick={() => (coords ? focusOn(coords.lat, coords.lng, 16) : request())}
-          />
-          <button
-            type="button"
-            onClick={() => setListOpen((v) => !v)}
-            aria-expanded={listOpen}
-            className="eyebrow flex h-10 items-center gap-2 border border-navy px-3.5 text-navy transition-colors hover:bg-navy hover:text-paper"
-          >
-            <svg
-              aria-hidden
-              viewBox="0 0 16 16"
-              className="size-3.5 fill-none stroke-current stroke-[1.8]"
-            >
-              <path d="M2 4h12M2 8h12M2 12h12" strokeLinecap="round" />
-            </svg>
-            {listOpen ? "Hide list" : "Show list"}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-rule bg-paper px-4 py-2.5 md:px-7">
+          <p className="text-sm text-muted md:text-[15px]">
+            {loading
+              ? "Loading…"
+              : `${ordered.length} event${ordered.length === 1 ? "" : "s"} in the next 6 hours` +
+                (liveCount ? ` · ${liveCount} happening now` : "")}
+          </p>
+          <p className="flex items-center gap-4 text-[13px] text-label">
+            <span className="flex items-center gap-1.5">
+              <span aria-hidden className="size-2.5 rounded-full bg-gold ring-1 ring-navy/40" />
+              Now
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span aria-hidden className="size-2.5 rounded-full bg-navy" />
+              Soon
+            </span>
+          </p>
         </div>
       </header>
 
@@ -158,19 +163,8 @@ export default function Home() {
               <h2 className="eyebrow text-navy">
                 {coords ? "Nearest first" : "Starting soonest"}
               </h2>
-              {status === "denied" ? (
-                <p className="text-[11px] text-muted">Location blocked</p>
-              ) : (
-                <p className="eyebrow flex items-center gap-3 text-label">
-                  <span className="flex items-center gap-1.5">
-                    <span aria-hidden className="size-2 rounded-full bg-gold ring-1 ring-navy/40" />
-                    Now
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span aria-hidden className="size-2 rounded-full bg-navy" />
-                    Soon
-                  </span>
-                </p>
+              {status === "denied" && (
+                <p className="text-[11px] text-muted">Location blocked — sorted by time</p>
               )}
             </div>
 
@@ -219,21 +213,21 @@ function LocateButton({
 }) {
   const label =
     status === "locating"
-      ? "Locating"
+      ? "Locating…"
       : status === "granted"
         ? "Recentre"
         : status === "denied"
-          ? "Blocked"
+          ? "Location blocked"
           : status === "unavailable"
-            ? "No GPS"
-            : "Locate me";
+            ? "No location"
+            : "Use my location";
 
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={status === "denied" || status === "unavailable" || status === "locating"}
-      className="eyebrow flex h-10 items-center gap-2 border border-navy bg-navy px-3.5 text-gold transition-colors hover:bg-navy-mid disabled:border-rule disabled:bg-transparent disabled:text-label"
+      className="flex h-10 items-center gap-2 border border-white bg-white px-4 text-sm font-semibold text-navy transition-colors hover:bg-paper-2 disabled:border-white/30 disabled:bg-transparent disabled:text-white/50"
     >
       <svg aria-hidden viewBox="0 0 16 16" className="size-3.5 fill-none stroke-current stroke-[1.9]">
         <circle cx="8" cy="8" r="3" />
