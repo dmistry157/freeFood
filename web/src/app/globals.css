@@ -106,6 +106,35 @@ body {
     0 3px 8px rgb(0 21 43 / 0.4);
 }
 
+/* Hidden because a cluster marker is standing in for it at this zoom. */
+.pin--clustered {
+  display: none;
+}
+
+/* Cluster marker: the count, styled like a pin so the map reads as one system. */
+.pin__count {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 3px solid var(--color-paper);
+  background: var(--color-navy);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow:
+    0 0 0 1px rgb(0 21 43 / 0.5),
+    0 2px 5px rgb(0 21 43 / 0.3);
+}
+
+.pin--cluster.pin--live .pin__count {
+  background: var(--color-gold);
+  color: var(--color-navy-deep);
+}
+
 .pin__halo {
   position: absolute;
   width: 42px;

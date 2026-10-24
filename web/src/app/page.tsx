@@ -203,8 +203,7 @@ export default function Home() {
               {/* Inside the scroll area rather than pinned, so a phone spends its
                   height on events instead of a standing footnote. */}
               <footer className="border-t border-rule px-4 py-3 text-[11px] leading-relaxed text-label">
-                Free food on the UC Berkeley campus, collected automatically. Your location stays in
-                your browser.
+                Find free food and meet people around Berkeley!
               </footer>
             </div>
           </aside>

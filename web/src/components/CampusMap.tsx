@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { isLive, isPlaced, spreadPins, statusText, type FoodEvent } from "@/lib/events";
@@ -216,6 +216,25 @@ function dressCampus(m: maplibregl.Map) {
   }
 }
 
+/**
+ * Two pins closer than this on screen are treated as one spot. Roughly the width
+ * of a pin's tap target, so anything that would overlap gets collapsed instead.
+ */
+const CLUSTER_PX = 38;
+
+function clusterElement(count: number, live: boolean, onClick: () => void): HTMLButtonElement {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = `pin pin--cluster${live ? " pin--live" : ""}`;
+  el.setAttribute("aria-label", `${count} events here — zoom in to separate them`);
+  el.innerHTML = `<span class="pin__count">${count}</span>`;
+  el.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onClick();
+  });
+  return el;
+}
+
 function meElement(): HTMLDivElement {
   const el = document.createElement("div");
   el.className = "me";
@@ -237,8 +256,77 @@ export default function CampusMap({
   const map = useRef<maplibregl.Map | null>(null);
   const pins = useRef(new Map<number, maplibregl.Marker>());
   const meMarker = useRef<maplibregl.Marker | null>(null);
+  const clusters = useRef<maplibregl.Marker[]>([]);
+  const positions = useRef(new Map<number, [number, number]>());
+  const liveIds = useRef(new Set<number>());
   // Keep the latest callbacks without tearing the map down when they change.
   const handlers = useRef({ onSelect, onClear });
+  // Held in a ref so the map-init effect can subscribe to moveend without taking
+  // recluster as a dependency and tearing the map down every time it changes.
+  const reclusterRef = useRef<() => void>(() => {});
+
+  /**
+   * Collapse pins that land on top of each other at the current zoom into a single
+   * marker showing how many there are.
+   *
+   * spreadPins offsets co-located events by a fixed ~14m, which is a usable gap
+   * once you are zoomed right in but barely a pixel at campus zoom — where the
+   * pins just overlap and the one underneath cannot be clicked. Grouping in screen
+   * space instead means the behaviour follows the zoom: a "2" when they overlap,
+   * two separate pins as soon as there is room, and clicking the cluster zooms to
+   * the point where they split.
+   */
+  const recluster = useCallback(() => {
+    const m = map.current;
+    if (!m) return;
+
+    for (const c of clusters.current) c.remove();
+    clusters.current = [];
+
+    const pts = [...positions.current.entries()].map(([id, lngLat]) => ({
+      id,
+      lngLat,
+      pt: m.project(lngLat),
+    }));
+
+    const taken = new Set<number>();
+    for (const a of pts) {
+      if (taken.has(a.id)) continue;
+      taken.add(a.id);
+      const group = [a];
+      for (const b of pts) {
+        if (taken.has(b.id)) continue;
+        if (Math.hypot(a.pt.x - b.pt.x, a.pt.y - b.pt.y) <= CLUSTER_PX) {
+          taken.add(b.id);
+          group.push(b);
+        }
+      }
+
+      const alone = group.length === 1;
+      for (const g of group) {
+        pins.current.get(g.id)?.getElement().classList.toggle("pin--clustered", !alone);
+      }
+      if (alone) continue;
+
+      const lng = group.reduce((t, g) => t + g.lngLat[0], 0) / group.length;
+      const lat = group.reduce((t, g) => t + g.lngLat[1], 0) / group.length;
+      const live = group.some((g) => liveIds.current.has(g.id));
+      clusters.current.push(
+        new maplibregl.Marker({
+          element: clusterElement(group.length, live, () =>
+            m.easeTo({ center: [lng, lat], zoom: Math.min(m.getZoom() + 2.5, 18), duration: 500 }),
+          ),
+        })
+          .setLngLat([lng, lat])
+          .addTo(m),
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    reclusterRef.current = recluster;
+  }, [recluster]);
+
   useEffect(() => {
     handlers.current = { onSelect, onClear };
   }, [onSelect, onClear]);
@@ -268,6 +356,7 @@ export default function CampusMap({
       dressCampus(m);
     });
     m.on("click", () => handlers.current.onClear());
+    m.on("moveend", () => reclusterRef.current());
     map.current = m;
     return () => {
       m.remove();
@@ -293,17 +382,18 @@ export default function CampusMap({
     const m = map.current;
     if (!m) return;
     const placed = events.filter(isPlaced);
-    const positions = spreadPins(placed);
+    const spread = spreadPins(placed);
+    positions.current = spread;
 
     for (const [id, marker] of pins.current) {
-      if (!positions.has(id)) {
+      if (!spread.has(id)) {
         marker.remove();
         pins.current.delete(id);
       }
     }
 
     for (const e of placed) {
-      const at = positions.get(e.id);
+      const at = spread.get(e.id);
       if (!at) continue;
       const existing = pins.current.get(e.id);
       if (existing) {
@@ -331,8 +421,11 @@ export default function CampusMap({
       el.querySelector<HTMLElement>(".pin__halo")!.hidden = !live;
       el.setAttribute("aria-label", `${e.title} — ${statusText(e, now)}`);
       el.style.zIndex = String(e.id === selectedId ? 3 : live ? 2 : 1);
+      if (live) liveIds.current.add(e.id);
+      else liveIds.current.delete(e.id);
     }
-  }, [events, now, selectedId]);
+    recluster();
+  }, [events, now, selectedId, recluster]);
 
   // The "you are here" dot.
   useEffect(() => {
