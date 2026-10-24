@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { isLive, isPlaced, spreadPins, statusText, type FoodEvent } from "@/lib/events";
 import { CAMPUS, CAMPUS_ZOOM, type Coords } from "@/lib/geo";
 import { CAMPUS_LANDMARKS } from "@/lib/campus";
+import { foodEmoji } from "@/lib/foodEmoji";
 
 // OpenFreeMap serves these tiles free with no API key and no account.
 const STYLE = "https://tiles.openfreemap.org/styles/positron";
@@ -59,12 +60,16 @@ type Props = {
   onAnchor?: (pt: { x: number; y: number } | null) => void;
 };
 
-function pinElement(label: string, onClick: () => void): HTMLButtonElement {
+function pinElement(label: string, emoji: string, onClick: () => void): HTMLButtonElement {
   const el = document.createElement("button");
   el.type = "button";
   el.className = "pin";
   el.setAttribute("aria-label", label);
-  el.innerHTML = '<span class="pin__halo" hidden></span><span class="pin__dot"></span>';
+  // The food sits inside the marker rather than beside it, so a glance at the
+  // map tells you what is on offer. Decorative: the label already has the title.
+  el.innerHTML =
+    '<span class="pin__halo" hidden></span>' +
+    `<span class="pin__badge" aria-hidden="true">${emoji}</span>`;
   // Stop the click here so the map's own handler (which clears the selection) doesn't also fire.
   el.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -473,7 +478,7 @@ export default function CampusMap({
         continue;
       }
       const marker = new maplibregl.Marker({
-        element: pinElement(e.title, () => handlers.current.onSelect(e.id)),
+        element: pinElement(e.title, foodEmoji(e), () => handlers.current.onSelect(e.id)),
       })
         .setLngLat(at)
         .addTo(m);

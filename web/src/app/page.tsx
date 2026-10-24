@@ -17,7 +17,7 @@ import { useLocation } from "@/lib/useLocation";
 const USE_GOOGLE = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
 
 /** Width of the floating card on desktop, used to keep it inside the map. */
-const CARD_W = 296;
+const CARD_W = 262;
 
 /** Left edge of the floating card, kept inside the map whatever the pin does. */
 function cardLeft(anchorX: number, width: number): number {
@@ -177,7 +177,7 @@ export default function Home() {
             type="button"
             onClick={() => setListOpen((v) => !v)}
             aria-expanded={listOpen}
-            className="h-10 border border-white/40 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            className="hidden h-10 border border-white/40 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10 md:block"
           >
             {listOpen ? "Hide list" : "Show list"}
           </button>
@@ -255,7 +255,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="pointer-events-none absolute inset-x-2 bottom-2 z-10 flex justify-center">
-                <div className="pointer-events-auto w-full max-w-[360px]">
+                <div className="pointer-events-auto w-full max-w-[290px]">
                   <EventCard
                     event={selected}
                     now={now}
@@ -268,8 +268,30 @@ export default function Home() {
             ))}
         </section>
 
+        {!listOpen && (
+          <button
+            type="button"
+            onClick={() => setListOpen(true)}
+            className="flex shrink-0 items-center justify-center gap-2 border-t border-navy bg-paper py-3 text-sm font-semibold text-navy transition-colors active:bg-paper-2 md:hidden"
+          >
+            {loading
+              ? "Loading…"
+              : `${ordered.length} event${ordered.length === 1 ? "" : "s"} nearby`}
+            <span aria-hidden className="text-[11px]">▲</span>
+          </button>
+        )}
+
         {listOpen && (
           <aside className="flex min-h-0 flex-1 flex-col border-t border-navy bg-paper md:w-[380px] md:flex-none md:border-l md:border-t-0">
+            <button
+              type="button"
+              onClick={() => setListOpen(false)}
+              aria-label="Hide the list"
+              className="grid shrink-0 place-items-center py-2.5 transition-colors active:bg-paper-2 md:hidden"
+            >
+              <span aria-hidden className="h-1 w-10 rounded-full bg-rule" />
+            </button>
+
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-4 py-2.5">
               <h2 className="eyebrow text-navy">
                 {coords ? "Nearest first" : "Starting soonest"}

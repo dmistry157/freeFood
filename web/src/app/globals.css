@@ -76,34 +76,44 @@ body {
   padding: 0;
 }
 
-.pin__dot {
-  width: 17px;
-  height: 17px;
+.pin__badge {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 3px solid var(--color-paper);
-  background: var(--color-navy);
+  border: 2.5px solid var(--color-navy);
+  background: var(--color-paper);
+  font-size: 15px;
+  line-height: 1;
   box-shadow:
-    0 0 0 1px rgb(0 21 43 / 0.5),
-    0 2px 5px rgb(0 21 43 / 0.3);
+    0 0 0 1px rgb(0 21 43 / 0.12),
+    0 2px 6px rgb(0 21 43 / 0.3);
   transition:
     width 130ms ease,
-    height 130ms ease;
+    height 130ms ease,
+    font-size 130ms ease;
 }
 
-/* Happening now is the thing you're scanning for, so it gets a clear size jump
-   over "soon" rather than a subtle one. */
-.pin--live .pin__dot {
-  width: 26px;
-  height: 26px;
-  background: var(--color-gold);
-}
-
-.pin--selected .pin__dot {
-  width: 32px;
-  height: 32px;
+/* Happening now: gold ring and a warm fill, so it reads before the navy ones. */
+.pin--live .pin__badge {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  border-color: var(--color-gold);
+  background: #fffaf0;
   box-shadow:
-    0 0 0 2px var(--color-navy-deep),
-    0 3px 8px rgb(0 21 43 / 0.4);
+    0 0 0 1px rgb(0 21 43 / 0.12),
+    0 3px 8px rgb(0 21 43 / 0.32);
+}
+
+.pin--selected .pin__badge {
+  width: 42px;
+  height: 42px;
+  font-size: 21px;
+  box-shadow:
+    0 0 0 3px var(--color-navy-deep),
+    0 4px 10px rgb(0 21 43 / 0.4);
 }
 
 /* Hidden because a cluster marker is standing in for it at this zoom. */
