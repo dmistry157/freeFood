@@ -1,7 +1,6 @@
 "use client";
 
 import { isLive, isPlaced, statusText, whereText, type FoodEvent } from "@/lib/events";
-import { foodEmoji } from "@/lib/foodEmoji";
 import { distanceText } from "@/lib/geo";
 
 type Props = {
@@ -81,18 +80,17 @@ function Item({
           : "hover:bg-paper-2/60 active:bg-paper-2"
       }`}
     >
-      {/* Same badge as the map marker, so the list and the map read as one thing. */}
-      <span
-        aria-hidden
-        className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border-2 bg-paper text-[13px] leading-none ${
-          live ? "border-gold" : "border-navy"
-        }`}
-      >
-        {foodEmoji(e)}
-      </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className={`eyebrow ${live ? "text-gold-ink" : "text-muted"}`}>
-          {statusText(e, now)}
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className={`size-2 shrink-0 rounded-full ${
+              live ? "bg-gold ring-1 ring-navy/40" : "bg-navy"
+            }`}
+          />
+          <span className={`eyebrow ${live ? "text-gold-ink" : "text-muted"}`}>
+            {statusText(e, now)}
+          </span>
         </span>
         <span className="text-[15px] font-semibold leading-snug tracking-[-0.1px] text-ink md:text-base">
           {e.title}
