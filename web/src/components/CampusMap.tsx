@@ -9,6 +9,23 @@ import { CAMPUS, CAMPUS_ZOOM, type Coords } from "@/lib/geo";
 // OpenFreeMap serves these tiles free with no API key and no account.
 const STYLE = "https://tiles.openfreemap.org/styles/positron";
 
+// Basemap layers hidden on load. Positron is already minimal, so this is aimed at
+// what actually competes on a campus-scale map: shouted neighbourhood names
+// (GOURMET GHETTO, SOUTHSIDE), creek labels crossing the middle of campus, and
+// highway route shields. Street names and place names stay — those help you walk there.
+const CLUTTER = new Set([
+  "label_other",
+  "waterway_line_label",
+  "highway-shield-non-us",
+  "highway-shield-us-interstate",
+  "road_shield_us",
+  "airport",
+  "aeroway-taxiway",
+  "aeroway-runway-casing",
+  "aeroway-area",
+  "aeroway-runway",
+]);
+
 // Turbopack doesn't emit MapLibre's worker, so serve the copy that
 // scripts/copy-maplibre-worker.mjs places in public/ (see next.config.ts basePath).
 maplibregl.setWorkerUrl(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/maplibre-gl-worker.mjs`);
@@ -81,6 +98,13 @@ export default function CampusMap({
     });
     m.touchZoomRotate.disableRotation();
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+
+    // Quieten the basemap so the pins are the only thing worth looking at.
+    m.on("load", () => {
+      for (const id of CLUTTER) {
+        if (m.getLayer(id)) m.setLayoutProperty(id, "visibility", "none");
+      }
+    });
     m.on("click", () => handlers.current.onClear());
     map.current = m;
     return () => {

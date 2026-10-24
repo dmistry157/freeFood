@@ -7,12 +7,13 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 
 export const metadata: Metadata = {
   title: "Berkeley Free Food",
+  applicationName: "Berkeley Free Food",
   description:
     "A live map of free food on the UC Berkeley campus. Red means it is happening now, grey means it starts within six hours.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#eeece6",
+  themeColor: "#003262",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

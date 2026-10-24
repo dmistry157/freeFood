@@ -3,9 +3,10 @@
 The map as a plain website: no Expo, no app install, works in any browser. It reads
 the same Supabase `events` table the iPhone app does, with the same read-only key.
 
-A **red pin** means free food is happening now; a **grey pin** means it starts within
+A **gold pin** means free food is happening now; a **navy pin** means it starts within
 six hours. Grant location and the map drops a dot where you are and reorders the list
-nearest-first, with walking distances.
+nearest-first, with walking distances. The list collapses so the map can fill the
+screen — useful on a phone.
 
 ```
 Supabase events (read-only key) ──► useEvents ──► MapLibre pins + nearby list
@@ -35,7 +36,8 @@ npm run lint
 | Path | What it is |
 | --- | --- |
 | `src/app/page.tsx` | The whole shell: header, map, nearby list, selected card |
-| `src/app/globals.css` | Design tokens shared with the app, plus the pin and location-dot CSS |
+| `src/app/globals.css` | Berkeley palette, type scale, and the pin and location-dot CSS |
+| `src/app/icon.svg` | Favicon: gold pin on Berkeley navy |
 | `src/components/CampusMap.tsx` | MapLibre map, pins as DOM markers, the "you are here" dot |
 | `src/components/EventCard.tsx` | Event detail card |
 | `src/components/NearbyList.tsx` | The list, including "not on the map" |
@@ -46,6 +48,14 @@ npm run lint
 
 ## Notes
 
+- **Colours** are Berkeley's own: Berkeley Blue `#003262`, California Gold `#FDB515`,
+  taken from the `uberk-eats` promo theme so the two projects match. Gold reads as
+  "happening now", navy as "starting soon". Status *text* uses a darker gold
+  (`--color-live`) because `#FDB515` on white fails contrast; the bright gold is kept
+  for pins and fills.
+- **The basemap is deliberately quietened.** `CLUTTER` in `CampusMap.tsx` hides
+  neighbourhood shout-caps, creek labels and highway shields on load. Street and place
+  names stay, since those are what you navigate by.
 - **Static export.** `output: "export"` in `next.config.ts`, so it can sit on GitHub
   Pages for free like the Expo web build. Every fetch happens in the browser, because
   whether a pin is red depends on the current time.
