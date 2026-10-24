@@ -13,7 +13,7 @@ import { useLocation } from "@/lib/useLocation";
 // MapLibre needs a browser, and the site is a static export, so load it client-side only.
 const CampusMap = dynamic(() => import("@/components/CampusMap"), {
   ssr: false,
-  loading: () => <div className="size-full bg-ground" />,
+  loading: () => <div className="size-full bg-paper-2" />,
 });
 
 export default function Home() {
@@ -75,22 +75,23 @@ export default function Home() {
   const liveCount = ordered.filter((e) => new Date(e.start_time) <= now).length;
 
   return (
-    <main className="flex h-dvh flex-col bg-ground">
-      <header className="flex shrink-0 flex-wrap items-center gap-x-4 gap-y-3 bg-cal-blue-dark px-4 py-3 md:px-6 md:py-4">
-        <div className="mr-auto flex items-center gap-3">
-          <svg aria-hidden viewBox="0 0 64 64" className="size-8 shrink-0 md:size-9">
-            <rect width="64" height="64" rx="14" className="fill-white/10" />
+    <main className="flex h-dvh flex-col bg-paper">
+      {/* Masthead: a printed header, not a toolbar. Paper, navy ink, one hairline rule. */}
+      <header className="flex shrink-0 flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-navy px-4 pb-3 pt-4 md:px-7 md:pb-4 md:pt-5">
+        <div className="flex items-center gap-3">
+          <svg aria-hidden viewBox="0 0 64 64" className="size-8 shrink-0">
+            <rect width="64" height="64" fill="var(--color-navy-deep)" />
             <path
-              d="M32 12.5c-7.46 0-13.5 6.04-13.5 13.5 0 9.73 11.5 23.8 12.66 25.2a1.1 1.1 0 0 0 1.68 0C34 49.8 45.5 35.73 45.5 26c0-7.46-6.04-13.5-13.5-13.5z"
-              className="fill-cal-gold"
+              d="M32 14c-7.18 0-13 5.82-13 13 0 9.37 11.07 22.92 12.19 24.27a1.06 1.06 0 0 0 1.62 0C33.93 49.92 45 36.37 45 27c0-7.18-5.82-13-13-13z"
+              fill="var(--color-gold)"
             />
-            <circle cx="32" cy="25.6" r="5.4" className="fill-cal-blue-dark" />
+            <circle cx="32" cy="26.6" r="5.2" fill="var(--color-navy-deep)" />
           </svg>
           <div>
-            <h1 className="text-lg font-semibold tracking-[-0.3px] text-white md:text-xl">
+            <h1 className="text-[21px] font-semibold leading-none tracking-[-0.6px] text-navy-deep md:text-[26px]">
               Berkeley Free Food
             </h1>
-            <p className="text-[13px] text-white/70 md:text-sm">
+            <p className="mt-1.5 text-[13px] leading-none text-muted md:text-sm">
               {loading
                 ? "Loading…"
                 : `${ordered.length} event${ordered.length === 1 ? "" : "s"} in the next 6 hours` +
@@ -99,17 +100,7 @@ export default function Home() {
           </div>
         </div>
 
-        <p className="eyebrow hidden items-center gap-4 text-white/70 lg:flex">
-          <span className="flex items-center gap-2">
-            <span aria-hidden className="size-2.5 rounded-full bg-cal-gold ring-2 ring-white" /> Now
-          </span>
-          <span className="flex items-center gap-2">
-            <span aria-hidden className="size-2.5 rounded-full bg-cal-blue ring-2 ring-white" />{" "}
-            Soon
-          </span>
-        </p>
-
-        <div className="flex items-center gap-2">
+        <div className="flex items-stretch gap-2">
           <LocateButton
             status={status}
             onClick={() => (coords ? focusOn(coords.lat, coords.lng, 16) : request())}
@@ -118,12 +109,12 @@ export default function Home() {
             type="button"
             onClick={() => setListOpen((v) => !v)}
             aria-expanded={listOpen}
-            className="flex h-10 items-center gap-1.5 rounded-full border border-white/25 px-3.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/10"
+            className="eyebrow flex h-10 items-center gap-2 border border-navy px-3.5 text-navy transition-colors hover:bg-navy hover:text-paper"
           >
             <svg
               aria-hidden
               viewBox="0 0 16 16"
-              className="size-4 fill-none stroke-current stroke-[1.7]"
+              className="size-3.5 fill-none stroke-current stroke-[1.8]"
             >
               <path d="M2 4h12M2 8h12M2 12h12" strokeLinecap="round" />
             </svg>
@@ -148,8 +139,8 @@ export default function Home() {
             focus={focus}
           />
           {selected && (
-            <div className="pointer-events-none absolute inset-x-2 bottom-2 flex justify-center md:inset-x-auto md:bottom-4 md:left-4 md:justify-start">
-              <div className="pointer-events-auto w-full max-w-[360px]">
+            <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center md:inset-x-auto md:bottom-5 md:left-5 md:justify-start">
+              <div className="pointer-events-auto w-full max-w-[350px]">
                 <EventCard
                   event={selected}
                   now={now}
@@ -162,13 +153,24 @@ export default function Home() {
         </section>
 
         {listOpen && (
-          <aside className="flex min-h-0 flex-1 flex-col border-t-2 border-cal-blue-dark/15 bg-card md:w-[400px] md:flex-none md:border-l-2 md:border-t-0">
-            <div className="flex shrink-0 items-baseline justify-between border-b border-line px-4 py-3">
-              <h2 className="eyebrow text-cal-blue-dark">
+          <aside className="flex min-h-0 flex-1 flex-col border-t border-navy bg-paper md:w-[380px] md:flex-none md:border-l md:border-t-0">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-4 py-2.5">
+              <h2 className="eyebrow text-navy">
                 {coords ? "Nearest first" : "Starting soonest"}
               </h2>
-              {status === "denied" && (
-                <p className="text-xs text-muted">Location blocked — sorted by time</p>
+              {status === "denied" ? (
+                <p className="text-[11px] text-muted">Location blocked</p>
+              ) : (
+                <p className="eyebrow flex items-center gap-3 text-label">
+                  <span className="flex items-center gap-1.5">
+                    <span aria-hidden className="size-2 rounded-full bg-gold ring-1 ring-navy/40" />
+                    Now
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span aria-hidden className="size-2 rounded-full bg-navy" />
+                    Soon
+                  </span>
+                </p>
               )}
             </div>
 
@@ -178,9 +180,9 @@ export default function Home() {
               ) : loading ? (
                 <p className="px-4 py-6 text-[15px] text-muted">Loading events…</p>
               ) : ordered.length === 0 ? (
-                <div className="px-4 py-6">
+                <div className="px-4 py-7">
                   <p className="text-base font-semibold text-ink">Nothing in the next 6 hours.</p>
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-label">
+                  <p className="mt-2 text-[13px] leading-relaxed text-label">
                     Events appear here as soon as the pipeline finds them. Check back later today.
                   </p>
                 </div>
@@ -196,7 +198,7 @@ export default function Home() {
 
               {/* Inside the scroll area rather than pinned, so a phone spends its
                   height on events instead of a standing footnote. */}
-              <footer className="border-t border-line px-4 py-3 text-xs leading-relaxed text-label">
+              <footer className="border-t border-rule px-4 py-3 text-[11px] leading-relaxed text-label">
                 Free food on the UC Berkeley campus, collected automatically. Your location stays in
                 your browser.
               </footer>
@@ -217,23 +219,23 @@ function LocateButton({
 }) {
   const label =
     status === "locating"
-      ? "Locating…"
+      ? "Locating"
       : status === "granted"
         ? "Recentre"
         : status === "denied"
           ? "Blocked"
           : status === "unavailable"
-            ? "Unavailable"
-            : "Use my location";
+            ? "No GPS"
+            : "Locate me";
 
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={status === "denied" || status === "unavailable" || status === "locating"}
-      className="flex h-10 items-center gap-2 rounded-full bg-cal-gold px-4 text-[13px] font-bold text-cal-blue-dark shadow-pill transition-colors hover:bg-cal-gold-dark disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/60"
+      className="eyebrow flex h-10 items-center gap-2 border border-navy bg-navy px-3.5 text-gold transition-colors hover:bg-navy-mid disabled:border-rule disabled:bg-transparent disabled:text-label"
     >
-      <svg aria-hidden viewBox="0 0 16 16" className="size-4 fill-none stroke-current stroke-[1.8]">
+      <svg aria-hidden viewBox="0 0 16 16" className="size-3.5 fill-none stroke-current stroke-[1.9]">
         <circle cx="8" cy="8" r="3" />
         <path d="M8 1v2M8 13v2M1 8h2M13 8h2" strokeLinecap="round" />
       </svg>

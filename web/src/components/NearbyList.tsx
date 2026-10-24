@@ -35,7 +35,7 @@ export function NearbyList({ events, now, selectedId, distances, onSelect }: Pro
 
       {unplaced.length > 0 && (
         <>
-          <h3 className="eyebrow border-y border-line bg-tag/60 px-4 py-2.5 text-label">
+          <h3 className="eyebrow border-y border-rule bg-paper-2/70 px-4 py-2 text-label">
             Not on the map
           </h3>
           {unplaced.map((e) => (
@@ -73,29 +73,31 @@ function Item({
       type="button"
       onClick={() => onSelect(e.id)}
       aria-current={selected}
-      className={`flex w-full items-start gap-3 border-b border-line px-4 py-3.5 text-left transition-colors last:border-0 ${
+      className={`flex w-full items-baseline gap-3 border-b border-rule-soft px-4 py-3.5 text-left transition-colors last:border-0 ${
         selected
-          ? "bg-tag shadow-[inset_3px_0_0_0_var(--color-cal-gold)]"
-          : "hover:bg-tag/55 active:bg-tag"
+          ? "bg-paper-2 shadow-[inset_3px_0_0_0_var(--color-navy)]"
+          : "hover:bg-paper-2/60 active:bg-paper-2"
       }`}
     >
-      <span
-        aria-hidden
-        className={`mt-1.5 size-2.5 shrink-0 rounded-full ring-2 ring-white ${
-          live ? "bg-cal-gold" : "bg-cal-blue"
-        }`}
-      />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className={`eyebrow ${live ? "text-live" : "text-muted"}`}>
-          {statusText(e, now)}
+        <span className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className={`size-2 shrink-0 rounded-full ${
+              live ? "bg-gold ring-1 ring-navy/40" : "bg-navy"
+            }`}
+          />
+          <span className={`eyebrow ${live ? "text-gold-ink" : "text-muted"}`}>
+            {statusText(e, now)}
+          </span>
         </span>
-        <span className="text-[15px] font-semibold leading-snug text-ink md:text-base">
+        <span className="text-[15px] font-semibold leading-snug tracking-[-0.1px] text-ink md:text-base">
           {e.title}
         </span>
         <span className="truncate text-[13px] text-label">{whereText(e)}</span>
       </span>
       {distanceFt != null && (
-        <span className="mt-0.5 shrink-0 font-mono text-xs font-medium text-cal-blue">
+        <span className="shrink-0 font-mono text-[11px] font-medium tracking-wide text-navy-mid">
           {distanceText(distanceFt)}
         </span>
       )}
