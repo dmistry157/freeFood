@@ -31,7 +31,6 @@
   --color-lawn-deep: #b6cf95;
 
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html,
@@ -46,13 +45,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Mono micro-label: statuses, section headings, button text. */
+/* Micro-label: statuses and section headings. Geist Mono was doing this job and
+   read like a terminal — wide, dated, and awkward on times like "ENDS 9:00 PM".
+   Same sans as the rest of the page, just small, bold and lightly tracked. */
 .eyebrow {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 1px;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
+}
+
+/* Distances line up in a column, so keep their digits a fixed width. */
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---- Map pins -------------------------------------------------------------

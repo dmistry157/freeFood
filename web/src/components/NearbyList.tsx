@@ -97,7 +97,7 @@ function Item({
         <span className="truncate text-[13px] text-label">{whereText(e)}</span>
       </span>
       {distanceFt != null && (
-        <span className="shrink-0 font-mono text-[11px] font-medium tracking-wide text-navy-mid">
+        <span className="tabular shrink-0 text-xs font-semibold text-navy-mid">
           {distanceText(distanceFt)}
         </span>
       )}

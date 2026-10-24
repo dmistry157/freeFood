@@ -83,7 +83,7 @@ export function EventCard({ event: e, now, distanceFt, onClose }: Props) {
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex gap-3">
-      <dt className="w-[70px] shrink-0 pt-0.5 font-mono text-[11px] uppercase tracking-wide text-label">
+      <dt className="w-[70px] shrink-0 pt-0.5 text-[11.5px] font-semibold uppercase tracking-[0.4px] text-label">
         {label}
       </dt>
       <dd className={`flex-1 text-[15px] leading-snug text-ink ${strong ? "font-semibold" : ""}`}>
