@@ -21,6 +21,7 @@ sources ──► raw_items (Supabase) ──► Gemini extraction ──► geo
 - **Dedupe** (`dedupe.py`): fingerprint = date + start hour + building, then a fuzzy title match.
 - **Database**: Supabase Postgres. The schema is in `supabase/schema.sql`. Row-level security is on, and the only public policy is "read events".
 - **Website** (dhilen.com/freefood): the same app built for web. `src/components/Map.tsx` is react-native-maps on iPhone; `Map.web.tsx` swaps in MapLibre with free OpenFreeMap tiles. `.github/workflows/web.yml` builds it on every push to `app/` or `site/` and deploys to GitHub Pages (`site/` holds the dhilen.com root page, which redirects to LinkedIn). The web sub-path comes from `WEB_BASE_URL` in `app.config.js`, so native builds don't get it. Test locally with `npx expo start --web`.
+- **Website, Next.js** (`web/`): a plain-browser version of the map, independent of Expo — same Supabase table, same read-only key, same design tokens. Adds a "you are here" dot and a nearest-first list with walking distances from `navigator.geolocation`. Next 16 + MapLibre, statically exported so it can sit on GitHub Pages. See `web/README.md`; run it with `cd web && npm install && npm run dev`.
 - **App** (`app/`): Expo SDK 57, TypeScript, react-native-maps (Apple Maps). Main files: `App.tsx` and `src/` (`events.ts`, `theme.ts`, `components/`). It reads events straight from Supabase's REST API with the read-only publishable key. Before changing app code, see `app/AGENTS.md` (Expo-version rules).
 
 ## Setup
