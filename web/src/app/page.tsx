@@ -150,8 +150,11 @@ export default function Home() {
             me={coords}
             focus={focus}
           />
+          {/* z-10 clears the map markers: maplibre sets an inline z-index of 1-3 on
+              each one, and .maplibregl-map is position:relative with no z-index, so
+              it opens no stacking context for them to be trapped in. */}
           {selected && (
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 flex justify-center md:inset-x-auto md:bottom-5 md:left-5 md:justify-start">
+            <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex justify-center md:inset-x-auto md:bottom-5 md:left-5 md:justify-start">
               <div className="pointer-events-auto w-full max-w-[350px]">
                 <EventCard
                   event={selected}
