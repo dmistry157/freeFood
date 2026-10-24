@@ -5,13 +5,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { isLive, isPlaced, spreadPins, statusText, type FoodEvent } from "@/lib/events";
 import { CAMPUS, CAMPUS_ZOOM, type Coords } from "@/lib/geo";
-import {
-  BERKELEY_BOUNDS,
-  CAMPUS_LANDMARKS,
-  CAMPUS_OUTLINE,
-  LAWNS,
-  OFF_CAMPUS_VEIL,
-} from "@/lib/campus";
+import { CAMPUS_LANDMARKS } from "@/lib/campus";
 
 // OpenFreeMap serves these tiles free with no API key and no account.
 const STYLE = "https://tiles.openfreemap.org/styles/positron";
@@ -64,78 +58,137 @@ function pinElement(label: string, onClick: () => void): HTMLButtonElement {
   return el;
 }
 
-// Palette mirrored from globals.css — MapLibre paint can't read CSS variables.
+// Campus palette, matched against how Google renders this part of Berkeley:
+// a light grey ground, tan university buildings, soft green lawns, a blue creek.
 const C = {
-  paper: "#faf8f3",
-  navy: "#001e3c",
-  building: "#e7dfd0",
-  lawn: "#cfe0b4",
-  lawnEdge: "#b6cf95",
-  lawnInk: "#4a6b32",
+  paper: "#ffffff",
+  navy: "#00264c",
+  ground: "#f1f1f3",
+  grass: "#d9e8d2",
+  wood: "#cfe0c3",
+  building: "#f6efdf",
+  buildingEdge: "#e7dabc",
+  path: "#c4ced9",
+  water: "#4fb3e8",
+  grassInk: "#44632f",
 };
 
 /**
- * Turn a generic basemap into campus: fade everything outside central campus,
- * put grass back on the glades, warm up the building footprints, and label the
- * buildings people actually navigate by.
+ * Restyle the basemap into a campus map, using the vector tiles' own layers
+ * (`landcover`, `landuse`, `building`, `transportation`, `waterway`) rather than
+ * shapes we invent — an earlier version drew its own rectangles for the glades
+ * and they looked exactly like that.
+ *
+ * Compared against Google's rendering of the same blocks, which differs from a
+ * stock basemap in three ways worth copying: the ground stays light grey and the
+ * *buildings* carry the warm tone, lawns are green, and footpaths are wide soft
+ * ribbons rather than hairlines. Paths only appear from zoom 16.5, because campus
+ * has hundreds of sidewalks and at any lower zoom they read as spaghetti.
  */
 function dressCampus(m: maplibregl.Map) {
-  // Grass, where the basemap had grey.
-  if (m.getLayer("park")) m.setPaintProperty("park", "fill-color", C.lawn);
-  if (m.getLayer("building")) {
-    m.setPaintProperty("building", "fill-color", C.building);
-    m.setPaintProperty("building", "fill-opacity", 0.9);
+  const src = "openmaptiles";
+  // Land fills go directly beneath this layer: above positron's own
+  // landuse_residential / landcover_wood, below roads, buildings and labels.
+  const ANCHOR = "waterway";
+
+  if (m.getLayer("background")) m.setPaintProperty("background", "background-color", C.ground);
+
+  // Real tree cover and grass, straight from OSM. Wood first so grass sits on top.
+  m.addLayer(
+    {
+      id: "campus-wood",
+      type: "fill",
+      source: src,
+      "source-layer": "landcover",
+      filter: ["in", ["get", "class"], ["literal", ["wood", "forest"]]],
+      paint: { "fill-color": C.wood, "fill-opacity": 0.75 },
+    },
+    ANCHOR,
+  );
+  m.addLayer(
+    {
+      id: "campus-grass",
+      type: "fill",
+      source: src,
+      "source-layer": "landcover",
+      filter: ["in", ["get", "class"], ["literal", ["grass", "farmland"]]],
+      paint: { "fill-color": C.grass, "fill-opacity": 0.95 },
+    },
+    ANCHOR,
+  );
+  if (m.getLayer("park")) {
+    m.setPaintProperty("park", "fill-color", C.grass);
+    m.setPaintProperty("park", "fill-opacity", 0.9);
   }
 
-  m.addSource("off-campus", { type: "geojson", data: OFF_CAMPUS_VEIL });
-  m.addSource("campus", { type: "geojson", data: CAMPUS_OUTLINE });
-  m.addSource("lawns", { type: "geojson", data: LAWNS });
-  m.addSource("landmarks", { type: "geojson", data: CAMPUS_LANDMARKS });
+  // Strawberry Creek, which Google draws as a clear blue thread through campus.
+  if (m.getLayer("waterway")) {
+    m.setPaintProperty("waterway", "line-color", C.water);
+    m.setPaintProperty("waterway", "line-width", [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      13,
+      0.8,
+      18,
+      3.2,
+    ]);
+  }
 
-  // Everything beyond campus washes out to paper, so the city stays as context
-  // without competing. The polygon has a campus-shaped hole, so campus is untouched.
-  m.addLayer({
-    id: "off-campus-veil",
-    type: "fill",
-    source: "off-campus",
-    paint: { "fill-color": C.paper, "fill-opacity": 0.74 },
-  });
+  // Footpaths, as wide soft ribbons and only once you're properly zoomed in.
+  // Drawn under the buildings, the way Google layers them.
+  m.addLayer(
+    {
+      id: "campus-paths",
+      type: "line",
+      source: src,
+      "source-layer": "transportation",
+      minzoom: 16.5,
+      filter: ["in", ["get", "subclass"], ["literal", ["path", "footway", "pedestrian"]]],
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": C.path,
+        "line-opacity": 0.75,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 16.5, 2, 18, 5],
+      },
+    },
+    "building",
+  );
 
+  // Buildings carry the warm campus tone; the ground stays light.
+  if (m.getLayer("building")) {
+    m.setPaintProperty("building", "fill-color", C.building);
+    m.setPaintProperty("building", "fill-opacity", 1);
+  }
   m.addLayer({
-    id: "campus-edge",
+    id: "building-edge",
     type: "line",
-    source: "campus",
-    paint: { "line-color": C.navy, "line-width": 1.25, "line-opacity": 0.5 },
+    source: src,
+    "source-layer": "building",
+    minzoom: 16,
+    paint: { "line-color": C.buildingEdge, "line-width": 0.9 },
   });
 
+  // Park names from OSM, in italic like the map's other natural features.
   m.addLayer({
-    id: "lawn-fill",
-    type: "fill",
-    source: "lawns",
-    paint: { "fill-color": C.lawn, "fill-opacity": 0.85 },
-  });
-  m.addLayer({
-    id: "lawn-edge",
-    type: "line",
-    source: "lawns",
-    paint: { "line-color": C.lawnEdge, "line-width": 1 },
-  });
-  m.addLayer({
-    id: "lawn-label",
+    id: "park-label",
     type: "symbol",
-    source: "lawns",
-    minzoom: 14.6,
+    source: src,
+    "source-layer": "park",
+    minzoom: 14.4,
     layout: {
-      "text-field": ["get", "name"],
+      "text-field": ["coalesce", ["get", "name:en"], ["get", "name"]],
       "text-font": ["Noto Sans Italic"],
       "text-size": 11,
       "text-padding": 3,
+      "text-optional": true,
     },
-    paint: { "text-color": C.lawnInk, "text-halo-color": C.paper, "text-halo-width": 1.4 },
+    paint: { "text-color": C.grassInk, "text-halo-color": C.paper, "text-halo-width": 1.4 },
   });
 
-  // Two passes so the well-known buildings survive label collisions and the rest
-  // only appear once you've zoomed in far enough to want them.
+  // Landmarks, from data/buildings.csv. Two passes so the well-known ones survive
+  // label collisions and the rest appear once you've zoomed in enough to want them.
+  m.addSource("landmarks", { type: "geojson", data: CAMPUS_LANDMARKS });
   for (const [rank, minzoom, size] of [
     [1, 14.1, 11],
     [2, 15.4, 10.5],
@@ -155,7 +208,7 @@ function dressCampus(m: maplibregl.Map) {
       },
       paint: {
         "text-color": C.navy,
-        "text-opacity": rank === 1 ? 0.92 : 0.75,
+        "text-opacity": rank === 1 ? 0.95 : 0.8,
         "text-halo-color": C.paper,
         "text-halo-width": 1.6,
       },
@@ -197,8 +250,7 @@ export default function CampusMap({
       style: STYLE,
       center: [CAMPUS.lng, CAMPUS.lat],
       zoom: CAMPUS_ZOOM,
-      maxBounds: BERKELEY_BOUNDS,
-      minZoom: 13.2,
+      minZoom: 11.5,
       maxZoom: 18,
       dragRotate: false,
       pitchWithRotate: false,
