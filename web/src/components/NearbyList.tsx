@@ -72,6 +72,7 @@ function Item({
     <button
       type="button"
       onClick={() => onSelect(e.id)}
+      data-event-id={e.id}
       aria-current={selected}
       className={`flex w-full items-baseline gap-3 border-b border-rule-soft px-4 py-3.5 text-left transition-colors last:border-0 ${
         selected

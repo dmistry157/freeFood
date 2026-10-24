@@ -37,6 +37,13 @@ export type Focus = {
   zoom?: number;
   /** When set, frame both points with padding instead of easing to one. */
   fitWith?: Coords;
+  /**
+   * Bring the point into view with the smallest pan that works, and leave the
+   * zoom alone. Nothing happens at all when it is already comfortably on screen.
+   */
+  reveal?: boolean;
+  /** Edge margins that count as "comfortably on screen", in px. */
+  pad?: { top: number; right: number; bottom: number; left: number };
   nonce: number;
 };
 
@@ -401,6 +408,23 @@ export default function CampusMap({
   useEffect(() => {
     const m = map.current;
     if (!m || !focus) return;
+    if (focus.reveal) {
+      const pt = m.project([focus.coords.lng, focus.coords.lat]);
+      const { clientWidth: w, clientHeight: h } = m.getContainer();
+      const pad = focus.pad ?? { top: 40, right: 30, bottom: 40, left: 30 };
+
+      // How far the pin has to travel to clear the margins — usually zero.
+      let dx = 0;
+      let dy = 0;
+      if (pt.x < pad.left) dx = pad.left - pt.x;
+      else if (pt.x > w - pad.right) dx = w - pad.right - pt.x;
+      if (pt.y < pad.top) dy = pad.top - pt.y;
+      else if (pt.y > h - pad.bottom) dy = h - pad.bottom - pt.y;
+
+      if (dx || dy) m.panBy([-dx, -dy], { duration: 420 });
+      return;
+    }
+
     if (focus.fitWith) {
       // Keep both the person and the event on screen, inside generous margins.
       m.fitBounds(

@@ -18,18 +18,24 @@ type Props = {
   onClose?: () => void;
   /** Tighter again, for the sheet along the bottom of a phone. */
   compact?: boolean;
+  /**
+   * Horizontal position of the pointer along the card's bottom edge, in px.
+   * Mirrors the arrow the iPhone app draws, so a floating card still reads as
+   * belonging to the pin beneath it even when it has been clamped sideways.
+   */
+  tailLeft?: number;
 };
 
 /**
  * The event detail card. Deliberately small: it floats over the map beside its
  * own pin, so every extra row of padding is map you cannot see.
  */
-export function EventCard({ event: e, now, distanceFt, onClose, compact }: Props) {
+export function EventCard({ event: e, now, distanceFt, onClose, compact, tailLeft }: Props) {
   const live = isLive(e, now);
   const likely = e.food_status === "likely";
 
   return (
-    <article className="flex w-full flex-col border border-navy bg-paper shadow-[0_8px_24px_rgb(0_21_43/0.2)]">
+    <article className="relative flex w-full flex-col border border-navy bg-paper shadow-[0_8px_24px_rgb(0_21_43/0.2)]">
       {/* Gold rule when live, navy when it starts soon — matches the pin. */}
       <span aria-hidden className={`h-1 w-full ${live ? "bg-gold" : "bg-navy"}`} />
 
@@ -87,6 +93,14 @@ export function EventCard({ event: e, now, distanceFt, onClose, compact }: Props
           </a>
         )}
       </div>
+
+      {tailLeft != null && (
+        <span
+          aria-hidden
+          className="absolute size-3 rotate-45 border-b border-r border-navy bg-paper"
+          style={{ left: tailLeft - 6, bottom: -7 }}
+        />
+      )}
     </article>
   );
 }

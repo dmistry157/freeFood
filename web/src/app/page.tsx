@@ -19,6 +19,13 @@ const USE_GOOGLE = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
 /** Width of the floating card on desktop, used to keep it inside the map. */
 const CARD_W = 296;
 
+/** Left edge of the floating card, kept inside the map whatever the pin does. */
+function cardLeft(anchorX: number, width: number): number {
+  const min = 12;
+  const max = Math.max(width - CARD_W - 12, min);
+  return Math.min(Math.max(anchorX - CARD_W / 2, min), max);
+}
+
 const CampusMap = dynamic(
   () => (USE_GOOGLE ? import("@/components/GoogleCampusMap") : import("@/components/CampusMap")),
   { ssr: false, loading: () => <div className="size-full bg-paper-2" /> },
@@ -54,10 +61,6 @@ export default function Home() {
     return () => ro.disconnect();
   }, []);
 
-  const focusOn = useCallback((lat: number, lng: number, zoom?: number) => {
-    nonce.current += 1;
-    setFocus({ coords: { lat, lng }, zoom, nonce: nonce.current });
-  }, []);
 
   // Walking distance to every placed event, once the browser shares a location.
   const distances = useMemo(() => {
@@ -88,9 +91,19 @@ export default function Home() {
     (id: number) => {
       setSelectedId(id);
       const e = events.find((x) => x.id === id);
-      if (e && isPlaced(e)) focusOn(e.lat, e.lng);
+      if (!e || !isPlaced(e)) return;
+      nonce.current += 1;
+      setFocus({
+        coords: { lat: e.lat, lng: e.lng },
+        reveal: true,
+        // Room for the card: above the pin on desktop, below it on a phone.
+        pad: wide
+          ? { top: 265, right: 30, bottom: 40, left: 30 }
+          : { top: 30, right: 20, bottom: 235, left: 20 },
+        nonce: nonce.current,
+      });
     },
-    [events, focusOn],
+    [events, wide],
   );
 
   /** The closest event that actually has a pin, or null if none are placed. */
@@ -110,6 +123,7 @@ export default function Home() {
   /** Centre on the person, but pull the nearest event into frame with them. */
   const frameMe = useCallback(() => {
     if (!coords) return;
+    setSelectedId(null);
     nonce.current += 1;
     setFocus({
       coords,
@@ -118,6 +132,22 @@ export default function Home() {
       nonce: nonce.current,
     });
   }, [coords, nearest]);
+
+  useEffect(() => {
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") setSelectedId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Clicking a pin should show you where that event sits in the list too.
+  useEffect(() => {
+    if (selectedId == null) return;
+    document
+      .querySelector(`[data-event-id="${selectedId}"]`)
+      ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedId]);
 
   // Frame the user the first time their position arrives.
   useEffect(() => {
@@ -137,9 +167,9 @@ export default function Home() {
         {/* Centred while it is stacked on a phone; back to wordmark-left,
             controls-right once there is room for one row. */}
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 bg-navy px-4 py-3 md:justify-between md:px-7 md:py-3.5">
-          <h1 className="w-full text-center text-xl font-semibold tracking-[1.5px] md:w-auto md:text-left md:text-2xl">
-            <span className="text-gold">BERKELEY</span>
-            <span className="text-white"> FREE FOOD</span>
+          <h1 className="w-full text-center text-xl font-semibold tracking-[-0.2px] md:w-auto md:text-left md:text-2xl">
+            <span className="text-gold">Berkeley</span>
+            <span className="text-white"> Free Food</span>
           </h1>
 
           {/* Plain text, no icon: the glyphs were doing no work at phone size. */}
@@ -206,7 +236,7 @@ export default function Home() {
               <div
                 className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full"
                 style={{
-                  left: Math.min(Math.max(anchor.x, CARD_W / 2 + 12), Math.max(mapWidth - CARD_W / 2 - 12, CARD_W / 2 + 12)),
+                  left: cardLeft(anchor.x, mapWidth) + CARD_W / 2,
                   top: Math.max(anchor.y - 22, 150),
                 }}
               >
@@ -216,6 +246,10 @@ export default function Home() {
                     now={now}
                     distanceFt={distances.get(selected.id) ?? null}
                     onClose={() => setSelectedId(null)}
+                    tailLeft={Math.min(
+                      Math.max(anchor.x - cardLeft(anchor.x, mapWidth) + CARD_W / 2, 18),
+                      CARD_W - 18,
+                    )}
                   />
                 </div>
               </div>
