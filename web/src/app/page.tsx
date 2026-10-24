@@ -16,6 +16,9 @@ import { useLocation } from "@/lib/useLocation";
 // Without one we stay on MapLibre and OpenFreeMap, which cost nothing.
 const USE_GOOGLE = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
 
+/** Width of the floating card on desktop, used to keep it inside the map. */
+const CARD_W = 296;
+
 const CampusMap = dynamic(
   () => (USE_GOOGLE ? import("@/components/GoogleCampusMap") : import("@/components/CampusMap")),
   { ssr: false, loading: () => <div className="size-full bg-paper-2" /> },
@@ -29,6 +32,27 @@ export default function Home() {
   const [focus, setFocus] = useState<Focus | null>(null);
   const nonce = useRef(0);
   const centredOnMe = useRef(false);
+  const mapSection = useRef<HTMLElement>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [mapWidth, setMapWidth] = useState(0);
+  const [wide, setWide] = useState(false);
+
+  // Desktop floats the card beside its pin; a phone gets a sheet along the bottom.
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    const el = mapSection.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setMapWidth(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const focusOn = useCallback((lat: number, lng: number, zoom?: number) => {
     nonce.current += 1;
@@ -69,13 +93,39 @@ export default function Home() {
     [events, focusOn],
   );
 
+  /** The closest event that actually has a pin, or null if none are placed. */
+  const nearest = useMemo(() => {
+    let best: { lat: number; lng: number } | null = null;
+    let bestFt = Infinity;
+    for (const e of events) {
+      const d = distances.get(e.id);
+      if (isPlaced(e) && d != null && d < bestFt) {
+        bestFt = d;
+        best = { lat: e.lat, lng: e.lng };
+      }
+    }
+    return best;
+  }, [events, distances]);
+
+  /** Centre on the person, but pull the nearest event into frame with them. */
+  const frameMe = useCallback(() => {
+    if (!coords) return;
+    nonce.current += 1;
+    setFocus({
+      coords,
+      zoom: 16,
+      fitWith: nearest ?? undefined,
+      nonce: nonce.current,
+    });
+  }, [coords, nearest]);
+
   // Frame the user the first time their position arrives.
   useEffect(() => {
     if (coords && !centredOnMe.current) {
       centredOnMe.current = true;
-      focusOn(coords.lat, coords.lng, 16);
+      frameMe();
     }
-  }, [coords, focusOn]);
+  }, [coords, frameMe]);
 
   const liveCount = ordered.filter((e) => new Date(e.start_time) <= now).length;
 
@@ -92,27 +142,15 @@ export default function Home() {
             <span className="text-white"> FREE FOOD</span>
           </h1>
 
-          <div className="flex items-stretch gap-2">
-            <LocateButton
-              status={status}
-              onClick={() => (coords ? focusOn(coords.lat, coords.lng, 16) : request())}
-            />
-            <button
-              type="button"
-              onClick={() => setListOpen((v) => !v)}
-              aria-expanded={listOpen}
-              className="flex h-10 items-center gap-2 border border-white/40 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-            >
-              <svg
-                aria-hidden
-                viewBox="0 0 16 16"
-                className="size-4 fill-none stroke-current stroke-[1.8]"
-              >
-                <path d="M2 4h12M2 8h12M2 12h12" strokeLinecap="round" />
-              </svg>
-              {listOpen ? "Hide list" : "Show list"}
-            </button>
-          </div>
+          {/* Plain text, no icon: the glyphs were doing no work at phone size. */}
+          <button
+            type="button"
+            onClick={() => setListOpen((v) => !v)}
+            aria-expanded={listOpen}
+            className="h-10 border border-white/40 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          >
+            {listOpen ? "Hide list" : "Show list"}
+          </button>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b border-rule bg-paper px-4 py-2.5 md:justify-between md:px-7">
@@ -137,6 +175,7 @@ export default function Home() {
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <section
+          ref={mapSection}
           className={`relative shrink-0 md:h-auto md:flex-1 ${
             listOpen ? "h-[44vh]" : "h-auto min-h-0 flex-1"
           }`}
@@ -145,26 +184,54 @@ export default function Home() {
             events={ordered}
             now={now}
             selectedId={selectedId}
-            onSelect={setSelectedId}
+            onSelect={select}
             onClear={() => setSelectedId(null)}
             me={coords}
             focus={focus}
+            onAnchor={setAnchor}
           />
+
+          {/* Round recentre control on the map, the way every map app does it. */}
+          <LocateButton
+            status={status}
+            onClick={() => (coords ? frameMe() : request())}
+          />
+
           {/* z-10 clears the map markers: maplibre sets an inline z-index of 1-3 on
               each one, and .maplibregl-map is position:relative with no z-index, so
               it opens no stacking context for them to be trapped in. */}
-          {selected && (
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex justify-center md:inset-x-auto md:bottom-5 md:left-5 md:justify-start">
-              <div className="pointer-events-auto w-full max-w-[350px]">
-                <EventCard
-                  event={selected}
-                  now={now}
-                  distanceFt={distances.get(selected.id) ?? null}
-                  onClose={() => setSelectedId(null)}
-                />
+          {selected &&
+            (wide && anchor ? (
+              // Floats just above its own pin, clamped so it never leaves the map.
+              <div
+                className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full"
+                style={{
+                  left: Math.min(Math.max(anchor.x, CARD_W / 2 + 12), Math.max(mapWidth - CARD_W / 2 - 12, CARD_W / 2 + 12)),
+                  top: Math.max(anchor.y - 22, 150),
+                }}
+              >
+                <div className="pointer-events-auto" style={{ width: CARD_W }}>
+                  <EventCard
+                    event={selected}
+                    now={now}
+                    distanceFt={distances.get(selected.id) ?? null}
+                    onClose={() => setSelectedId(null)}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="pointer-events-none absolute inset-x-2 bottom-2 z-10 flex justify-center">
+                <div className="pointer-events-auto w-full max-w-[360px]">
+                  <EventCard
+                    event={selected}
+                    now={now}
+                    distanceFt={distances.get(selected.id) ?? null}
+                    onClose={() => setSelectedId(null)}
+                    compact
+                  />
+                </div>
+              </div>
+            ))}
         </section>
 
         {listOpen && (
@@ -204,6 +271,18 @@ export default function Home() {
                   height on events instead of a standing footnote. */}
               <footer className="border-t border-rule px-4 py-3 text-[11px] leading-relaxed text-label">
                 Find free food and meet people around Berkeley!
+                <span className="mt-1 block text-[10px] text-label/70">
+                  Map data ©{" "}
+                  <a
+                    href="https://www.openstreetmap.org/copyright"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    OpenStreetMap
+                  </a>{" "}
+                  contributors · tiles by OpenFreeMap
+                </span>
               </footer>
             </div>
           </aside>
@@ -220,29 +299,32 @@ function LocateButton({
   status: ReturnType<typeof useLocation>["status"];
   onClick: () => void;
 }) {
+  const off = status === "denied" || status === "unavailable";
   const label =
     status === "locating"
-      ? "Locating…"
+      ? "Finding your location"
       : status === "granted"
-        ? "Recentre"
-        : status === "denied"
-          ? "Location blocked"
-          : status === "unavailable"
-            ? "No location"
-            : "Use my location";
+        ? "Recentre on me"
+        : off
+          ? "Location unavailable"
+          : "Use my location";
 
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={status === "denied" || status === "unavailable" || status === "locating"}
-      className="flex h-10 items-center gap-2 border border-white bg-white px-4 text-sm font-semibold text-navy transition-colors hover:bg-paper-2 disabled:border-white/30 disabled:bg-transparent disabled:text-white/50"
+      disabled={off || status === "locating"}
+      aria-label={label}
+      title={label}
+      className={`absolute right-4 top-4 z-20 grid size-12 place-items-center rounded-full border border-rule bg-paper shadow-[0_2px_8px_rgb(0_21_43/0.25)] transition-colors hover:bg-paper-2 disabled:opacity-45 md:bottom-4 md:top-auto ${
+        status === "granted" ? "text-navy-mid" : "text-navy"
+      }`}
     >
-      <svg aria-hidden viewBox="0 0 16 16" className="size-3.5 fill-none stroke-current stroke-[1.9]">
-        <circle cx="8" cy="8" r="3" />
-        <path d="M8 1v2M8 13v2M1 8h2M13 8h2" strokeLinecap="round" />
+      <svg aria-hidden viewBox="0 0 24 24" className="size-6 fill-none stroke-current stroke-[1.8]">
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" strokeLinecap="round" />
       </svg>
-      {label}
     </button>
   );
 }

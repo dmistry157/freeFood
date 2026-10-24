@@ -32,7 +32,13 @@ const CLUTTER = new Set([
 maplibregl.setWorkerUrl(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/maplibre-gl-worker.mjs`);
 
 /** A place to ease the camera to. `nonce` changes to re-trigger the same target. */
-export type Focus = { coords: Coords; zoom?: number; nonce: number };
+export type Focus = {
+  coords: Coords;
+  zoom?: number;
+  /** When set, frame both points with padding instead of easing to one. */
+  fitWith?: Coords;
+  nonce: number;
+};
 
 type Props = {
   events: FoodEvent[];
@@ -42,6 +48,8 @@ type Props = {
   onClear: () => void;
   me: Coords | null;
   focus: Focus | null;
+  /** Screen position of the selected pin, so the card can open beside it. */
+  onAnchor?: (pt: { x: number; y: number } | null) => void;
 };
 
 function pinElement(label: string, onClick: () => void): HTMLButtonElement {
@@ -251,6 +259,7 @@ export default function CampusMap({
   onClear,
   me,
   focus,
+  onAnchor,
 }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -264,6 +273,7 @@ export default function CampusMap({
   // Held in a ref so the map-init effect can subscribe to moveend without taking
   // recluster as a dependency and tearing the map down every time it changes.
   const reclusterRef = useRef<() => void>(() => {});
+  const anchorRef = useRef<() => void>(() => {});
 
   /**
    * Collapse pins that land on top of each other at the current zoom into a single
@@ -327,6 +337,25 @@ export default function CampusMap({
     reclusterRef.current = recluster;
   }, [recluster]);
 
+  // Report where the selected pin sits on screen so the card can open beside it
+  // rather than always in a corner. Recomputed as the map moves.
+  const reportAnchor = useCallback(() => {
+    const m = map.current;
+    if (!m || !onAnchor) return;
+    const at = selectedId == null ? undefined : positions.current.get(selectedId);
+    if (!at) {
+      onAnchor(null);
+      return;
+    }
+    const { x, y } = m.project(at);
+    onAnchor({ x, y });
+  }, [selectedId, onAnchor]);
+
+  useEffect(() => {
+    anchorRef.current = reportAnchor;
+    reportAnchor();
+  }, [reportAnchor]);
+
   useEffect(() => {
     handlers.current = { onSelect, onClear };
   }, [onSelect, onClear]);
@@ -343,10 +372,11 @@ export default function CampusMap({
       dragRotate: false,
       pitchWithRotate: false,
       touchPitch: false,
-      attributionControl: { compact: true },
+      // No attribution control on the map itself. OpenStreetMap's licence still
+      // requires the credit, so it lives as a line in the page footer instead.
+      attributionControl: false,
     });
     m.touchZoomRotate.disableRotation();
-    m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
 
     // Quieten the basemap, then draw campus on top of it.
     m.on("load", () => {
@@ -357,6 +387,7 @@ export default function CampusMap({
     });
     m.on("click", () => handlers.current.onClear());
     m.on("moveend", () => reclusterRef.current());
+    m.on("move", () => anchorRef.current());
     map.current = m;
     return () => {
       m.remove();
@@ -370,6 +401,23 @@ export default function CampusMap({
   useEffect(() => {
     const m = map.current;
     if (!m || !focus) return;
+    if (focus.fitWith) {
+      // Keep both the person and the event on screen, inside generous margins.
+      m.fitBounds(
+        [
+          [
+            Math.min(focus.coords.lng, focus.fitWith.lng),
+            Math.min(focus.coords.lat, focus.fitWith.lat),
+          ],
+          [
+            Math.max(focus.coords.lng, focus.fitWith.lng),
+            Math.max(focus.coords.lat, focus.fitWith.lat),
+          ],
+        ],
+        { padding: { top: 70, bottom: 110, left: 60, right: 60 }, maxZoom: 16.5, duration: 700 },
+      );
+      return;
+    }
     m.easeTo({
       center: [focus.coords.lng, focus.coords.lat],
       zoom: focus.zoom ?? Math.max(m.getZoom(), 16),
