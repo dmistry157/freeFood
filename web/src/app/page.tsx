@@ -183,7 +183,9 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b border-rule bg-paper px-4 py-2.5 md:justify-between md:px-7">
+        {/* Desktop only: on a phone the list itself is the count, and this strip
+            was just eating map. */}
+        <div className="hidden flex-wrap items-center justify-center gap-x-4 gap-y-1 border-b border-rule bg-paper px-4 py-2.5 md:flex md:justify-between md:px-7">
           <p className="text-sm text-muted md:text-[15px]">
             {loading
               ? "Loading…"
