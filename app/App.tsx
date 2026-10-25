@@ -11,6 +11,7 @@ import MapView, { Marker, Region } from './src/components/Map';
 import { Pin } from './src/components/Pin';
 import { EventCard } from './src/components/EventCard';
 import { UnplacedList } from './src/components/UnplacedList';
+import { InstallButton } from './src/components/InstallButton';
 
 const REFRESH_MS = 5 * 60 * 1000;
 const CLOCK_MS = 30 * 1000;
@@ -126,6 +127,7 @@ function FoodMap() {
         <Text style={styles.brand}>Free food</Text>
         <Text style={styles.headerSub}>Berkeley · {today}</Text>
       </View>
+      <InstallButton top={insets.top + 8} />
 
       {error && (
         <Pressable onPress={refresh} style={[styles.error, shadow.pill, { top: insets.top + 60 }]} accessibilityRole="button">
