@@ -22,6 +22,8 @@ ACTIVE = {
     "calasce", "mtcberkeley", "hes_ucberkeley",
     # Added 2026-10-22: on calevents but it missed their ice cream social (stories only; calevents has posts):
     "sps_berkeley", "musaberkeley",
+    # Added 2026-10-24: not on calevents; missed their Glade event:
+    "uavs_berkeley",
 }
 
 rows = {}
