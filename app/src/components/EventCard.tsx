@@ -15,7 +15,8 @@ export function EventCard({ event: e, now, onClose, arrow, flat }: Props) {
   const live = isLive(e, now);
   const statusColor = live ? colors.live : colors.muted;
   const likely = e.food_status === 'likely';
-  const food = likely ? e.food_reason || 'Not mentioned' : e.food || 'Free food';
+  // A "likely" event has no confirmed food, so only show the row if a specific food is named.
+  const food = likely ? e.food : e.food || 'Free food';
 
   return (
     <View style={[styles.card, !flat && shadow.card]}>
@@ -44,7 +45,7 @@ export function EventCard({ event: e, now, onClose, arrow, flat }: Props) {
       <View style={styles.rows}>
         <Row label="When" value={whenText(e)} />
         <Row label="Where" value={whereText(e)} />
-        <Row label="Food" value={food} strong={!likely} />
+        {food ? <Row label="Food" value={food} strong={!likely} /> : null}
         <Row label="To get in" value={e.requirements || e.open_to || 'Open to all'} />
       </View>
 
