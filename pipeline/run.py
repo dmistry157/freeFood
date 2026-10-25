@@ -75,8 +75,8 @@ def main(names: list[str], urgent_only: bool = False, after_fetch=None) -> int:
             print(f"source {name} failed:\n{traceback.format_exc()}")
     if after_fetch:
         after_fetch()
-    for step, fn in [("extract + store", lambda: dedupe.store(extract.run(urgent_only=urgent_only,
-                                                                            max_calls=2 if urgent_only else 6))),
+    for step, fn in [("extract + store", lambda: extract.run(urgent_only=urgent_only, max_calls=2 if urgent_only else 6,
+                                                            store=dedupe.store)),
                      ("cleanup", cleanup)]:
         try:
             fn()

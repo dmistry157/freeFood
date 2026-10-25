@@ -18,6 +18,7 @@ export function EventCard({ event: e, now, onClose, arrow, flat }: Props) {
   // A "likely" event has no confirmed food, so only show the row if a specific food is named.
   const food = likely ? e.food : e.food || 'Free food';
   const others = otherSources(e);
+  const link = e.link && /^https?:\/\//i.test(e.link) ? e.link : null; // only open web links
 
   return (
     <View style={[styles.card, !flat && shadow.card]}>
@@ -50,9 +51,9 @@ export function EventCard({ event: e, now, onClose, arrow, flat }: Props) {
         <Row label="To get in" value={e.requirements || e.open_to || 'Open to all'} />
       </View>
 
-      {e.link && (
+      {link && (
         <Pressable
-          onPress={() => Linking.openURL(e.link!)}
+          onPress={() => Linking.openURL(link)}
           accessibilityRole="link"
           style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
         >
