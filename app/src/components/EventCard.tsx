@@ -16,6 +16,7 @@ export function EventCard({ event: e, now, onClose, arrow, flat }: Props) {
   const statusColor = live ? colors.live : colors.muted;
   const likely = e.food_status === 'likely';
   const food = likely ? e.food_reason || 'Not mentioned' : e.food || 'Free food';
+  const link = e.link && /^https?:\/\//i.test(e.link) ? e.link : null; // only open web links
 
   return (
     <View style={[styles.card, !flat && shadow.card]}>
@@ -48,9 +49,9 @@ export function EventCard({ event: e, now, onClose, arrow, flat }: Props) {
         <Row label="To get in" value={e.requirements || e.open_to || 'Open to all'} />
       </View>
 
-      {e.link && (
+      {link && (
         <Pressable
-          onPress={() => Linking.openURL(e.link!)}
+          onPress={() => Linking.openURL(link)}
           accessibilityRole="link"
           style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
         >
