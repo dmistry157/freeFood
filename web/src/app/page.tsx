@@ -35,7 +35,10 @@ export default function Home() {
   const { events, now, error, loading } = useEvents();
   const { coords, status, request } = useLocation();
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [listOpen, setListOpen] = useState(true);
+  // Starts closed, which is what a phone wants and avoids the list flashing in
+  // before the media query resolves; the effect below opens it on desktop.
+  const [listOpen, setListOpen] = useState(false);
+  const listTouched = useRef(false);
   const [focus, setFocus] = useState<Focus | null>(null);
   const nonce = useRef(0);
   const centredOnMe = useRef(false);
@@ -45,9 +48,18 @@ export default function Home() {
   const [wide, setWide] = useState(false);
 
   // Desktop floats the card beside its pin; a phone gets a sheet along the bottom.
+  const toggleList = useCallback((next: boolean) => {
+    listTouched.current = true;
+    setListOpen(next);
+  }, []);
+
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
-    const sync = () => setWide(mq.matches);
+    const sync = () => {
+      setWide(mq.matches);
+      // Default per viewport, but never override a choice they made themselves.
+      if (!listTouched.current) setListOpen(mq.matches);
+    };
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
@@ -175,7 +187,7 @@ export default function Home() {
           {/* Plain text, no icon: the glyphs were doing no work at phone size. */}
           <button
             type="button"
-            onClick={() => setListOpen((v) => !v)}
+            onClick={() => toggleList(!listOpen)}
             aria-expanded={listOpen}
             className="hidden h-10 border border-white/40 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10 md:block"
           >
@@ -273,7 +285,7 @@ export default function Home() {
         {!listOpen && (
           <button
             type="button"
-            onClick={() => setListOpen(true)}
+            onClick={() => toggleList(true)}
             className="flex shrink-0 items-center justify-center gap-2 border-t border-navy bg-paper py-3 text-sm font-semibold text-navy transition-colors active:bg-paper-2 md:hidden"
           >
             {loading
@@ -287,7 +299,7 @@ export default function Home() {
           <aside className="flex min-h-0 flex-1 flex-col border-t border-navy bg-paper md:w-[380px] md:flex-none md:border-l md:border-t-0">
             <button
               type="button"
-              onClick={() => setListOpen(false)}
+              onClick={() => toggleList(false)}
               aria-label="Hide the list"
               className="grid shrink-0 place-items-center py-2.5 transition-colors active:bg-paper-2 md:hidden"
             >
