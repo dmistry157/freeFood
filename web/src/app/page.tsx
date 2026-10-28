@@ -374,42 +374,50 @@ export default function Home() {
                 />
               )}
 
-              {/* Inside the scroll area rather than pinned, so a phone spends its
-                  height on events instead of a standing footnote. */}
-              <footer className="border-t border-rule px-4 py-3 text-[11px] leading-relaxed text-label">
-                Find free food and meet people around Berkeley!
-                <span className="mt-1 block">
-                  DM:{" "}
-                  <a
-                    href="https://mohul.dev/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-navy-mid underline underline-offset-2"
-                  >
-                    @mohul
-                  </a>{" "}
-                  or{" "}
-                  <a
-                    href="https://x.com/DhilenMistry"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-navy-mid underline underline-offset-2"
-                  >
-                    @DhilenMistry
-                  </a>
-                </span>
-                {/* The basemap credit OpenStreetMap's licence asks for. Off the
-                    page, since it is noise to anyone looking for lunch, but in
-                    the document for anyone or anything reading it. */}
-                <span className="sr-only">
-                  Map data © OpenStreetMap contributors · tiles by OpenFreeMap
-                </span>
-              </footer>
+              {/* A phone keeps it in the scroll area, so the height goes on
+                  events rather than a standing footnote. */}
+              <SiteFooter className="md:hidden" />
             </div>
+
+            {/* Desktop has the room to stand it at the foot of the panel. */}
+            <SiteFooter className="hidden shrink-0 md:block" />
           </aside>
         )}
       </div>
     </main>
+  );
+}
+
+function SiteFooter({ className = "" }: { className?: string }) {
+  const credit =
+    "font-semibold text-navy-mid underline underline-offset-2 transition-colors hover:text-navy";
+  return (
+    <footer
+      className={`border-t border-rule px-4 py-3 text-[11px] leading-relaxed text-label ${className}`}
+    >
+      Find free food and meet people around Berkeley!
+      <span className="mt-1 block">
+        Built by{" "}
+        <a href="https://mohul.dev/" target="_blank" rel="noopener noreferrer" className={credit}>
+          mohul
+        </a>{" "}
+        &{" "}
+        <a
+          href="https://x.com/DhilenMistry"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={credit}
+        >
+          dhilen
+        </a>
+      </span>
+      {/* The basemap credit OpenStreetMap's licence asks for. Off the page,
+          since it is noise to anyone looking for lunch, but in the document
+          for anyone or anything reading it. */}
+      <span className="sr-only">
+        Map data © OpenStreetMap contributors · tiles by OpenFreeMap
+      </span>
+    </footer>
   );
 }
 
