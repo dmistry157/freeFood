@@ -15,8 +15,8 @@ type State = {
 };
 
 /**
- * @param windowMs how far ahead to look. Always WINDOW_MS in production; the
- * local look-ahead slider widens it, and changing it refetches.
+ * @param windowMs how far ahead to look. Six hours unless the look-ahead
+ * slider widens it; changing it refetches.
  */
 export function useEvents(windowMs: number = WINDOW_MS): State {
   const [events, setEvents] = useState<FoodEvent[]>([]);

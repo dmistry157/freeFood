@@ -25,7 +25,7 @@ const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 /** Show events that have not ended and start within the next six hours. */
 export const WINDOW_MS = 6 * 60 * 60 * 1000;
 
-/** How far ahead the local look-ahead slider can reach. */
+/** How far ahead the look-ahead slider can reach. */
 export const MAX_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 const FIELDS =

@@ -6,7 +6,6 @@ import { EventCard } from "@/components/EventCard";
 import { LookAheadSlider, windowLabel } from "@/components/LookAheadSlider";
 import { NearbyList } from "@/components/NearbyList";
 import type { Focus } from "@/components/CampusMap";
-import { isLocalhost } from "@/lib/devPreview";
 import { isPlaced, WINDOW_MS } from "@/lib/events";
 import { distanceFt } from "@/lib/geo";
 import { useEvents } from "@/lib/useEvents";
@@ -34,11 +33,10 @@ const CampusMap = dynamic(
 );
 
 export default function Home() {
-  // Always WINDOW_MS in production; the local look-ahead slider widens it.
+  // Six hours unless the look-ahead slider widens it.
   const [lookAheadMs, setLookAheadMs] = useState(WINDOW_MS);
   const { events, now, error, loading } = useEvents(lookAheadMs);
   const { coords, status, request } = useLocation();
-  const [local, setLocal] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // Starts closed, which is what a phone wants and avoids the list flashing in
   // before the media query resolves; the effect below opens it on desktop.
@@ -68,11 +66,6 @@ export default function Home() {
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
-  }, []);
-
-  useEffect(() => {
-    const check = () => setLocal(isLocalhost());
-    check();
   }, []);
 
   useEffect(() => {
@@ -193,7 +186,7 @@ export default function Home() {
       ).length,
     [events, now],
   );
-  const showLookAhead = local && wide && sixHourCount === 0;
+  const showLookAhead = wide && sixHourCount === 0;
 
   return (
     <main className="flex h-dvh flex-col bg-paper">

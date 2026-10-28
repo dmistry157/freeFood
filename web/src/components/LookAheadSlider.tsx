@@ -26,11 +26,12 @@ export function windowLabel(ms: number): string {
 }
 
 /**
- * Local-only control for widening the six-hour window.
+ * Widens the six-hour window when nothing is on.
  *
- * The app deliberately shows a narrow slice, but the table usually holds three
- * weeks of events, which makes an empty campus hard to tell from a broken
- * pipeline while developing. Dragging this refetches with a wider horizon.
+ * The map deliberately shows a narrow slice, since what you want at noon is
+ * lunch and not next Tuesday. But an empty campus is a dead end, and there are
+ * usually weeks of events already stored, so this offers them rather than
+ * nothing. Dragging it refetches with a wider horizon.
  */
 export function LookAheadSlider({ valueMs, onChange, found }: Props) {
   const [hours, setHours] = useState(() => Math.round(valueMs / HOUR_MS));
@@ -69,7 +70,7 @@ export function LookAheadSlider({ valueMs, onChange, found }: Props) {
 
       <p className="mt-1.5 text-[11.5px] leading-relaxed text-label">
         {hours * HOUR_MS === WINDOW_MS
-          ? "Local only. Widen the window to see what the pipeline already has."
+          ? "Nothing on in the next 6 hours. Drag to look further ahead."
           : found === 0
             ? `Still nothing within ${windowLabel(hours * HOUR_MS)}.`
             : `${found} event${found === 1 ? "" : "s"} within ${windowLabel(hours * HOUR_MS)}.`}
