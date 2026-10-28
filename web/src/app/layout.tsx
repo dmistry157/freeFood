@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   applicationName: "Berkeley Free Food",
   description:
     "A live map of free food on the UC Berkeley campus. Gold means it is happening now, navy means it starts within six hours.",
+  // The basemap credit OpenStreetMap's licence asks for. It is here rather than
+  // on the page because the footer is for the people using the site; the page
+  // also carries it as screen-reader text.
+  other: {
+    attribution: "Map data © OpenStreetMap contributors · tiles by OpenFreeMap",
+  },
 };
 
 export const viewport: Viewport = {

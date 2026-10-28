@@ -385,7 +385,8 @@ export default function CampusMap({
       pitchWithRotate: false,
       touchPitch: false,
       // No attribution control on the map itself. OpenStreetMap's licence still
-      // requires the credit, so it lives as a line in the page footer instead.
+      // requires the credit, so it lives in the document metadata and as
+      // screen-reader text in the footer instead.
       attributionControl: false,
     });
     m.touchZoomRotate.disableRotation();

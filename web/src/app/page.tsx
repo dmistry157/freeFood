@@ -353,14 +353,17 @@ export default function Home() {
               ) : loading ? (
                 <p className="px-4 py-6 text-[15px] text-muted">Loading events…</p>
               ) : ordered.length === 0 ? (
-                <div className="px-4 py-7">
-                  <p className="text-base font-semibold text-ink">
-                    Nothing in the next {windowLabel(lookAheadMs)}.
-                  </p>
-                  <p className="mt-2 text-[13px] leading-relaxed text-label">
-                    Events appear here as soon as the pipeline finds them. Check back later today.
-                  </p>
-                </div>
+                // The slider says what it found, so this would only repeat it.
+                showLookAhead ? null : (
+                  <div className="px-4 py-7">
+                    <p className="text-base font-semibold text-ink">
+                      Nothing in the next {windowLabel(lookAheadMs)}.
+                    </p>
+                    <p className="mt-2 text-[13px] leading-relaxed text-label">
+                      Events appear here as soon as the pipeline finds them. Check back later today.
+                    </p>
+                  </div>
+                )
               ) : (
                 <NearbyList
                   events={ordered}
@@ -375,17 +378,31 @@ export default function Home() {
                   height on events instead of a standing footnote. */}
               <footer className="border-t border-rule px-4 py-3 text-[11px] leading-relaxed text-label">
                 Find free food and meet people around Berkeley!
-                <span className="mt-1 block text-[10px] text-label/70">
-                  Map data ©{" "}
+                <span className="mt-1 block">
+                  DM:{" "}
                   <a
-                    href="https://www.openstreetmap.org/copyright"
+                    href="https://mohul.dev/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline underline-offset-2"
+                    className="font-semibold text-navy-mid underline underline-offset-2"
                   >
-                    OpenStreetMap
+                    @mohul
                   </a>{" "}
-                  contributors · tiles by OpenFreeMap
+                  or{" "}
+                  <a
+                    href="https://x.com/DhilenMistry"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-navy-mid underline underline-offset-2"
+                  >
+                    @DhilenMistry
+                  </a>
+                </span>
+                {/* The basemap credit OpenStreetMap's licence asks for. Off the
+                    page, since it is noise to anyone looking for lunch, but in
+                    the document for anyone or anything reading it. */}
+                <span className="sr-only">
+                  Map data © OpenStreetMap contributors · tiles by OpenFreeMap
                 </span>
               </footer>
             </div>
