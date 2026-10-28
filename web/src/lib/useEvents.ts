@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { fetchEvents, type FoodEvent } from "./events";
+import { fetchEvents, WINDOW_MS, type FoodEvent } from "./events";
 
 const REFETCH_MS = 5 * 60 * 1000; // the pipeline writes every few hours; this is plenty
 const TICK_MS = 30 * 1000; // re-render so "In 12 min" and pin colours stay honest
@@ -14,7 +14,11 @@ type State = {
   reload: () => void;
 };
 
-export function useEvents(): State {
+/**
+ * @param windowMs how far ahead to look. Always WINDOW_MS in production; the
+ * local look-ahead slider widens it, and changing it refetches.
+ */
+export function useEvents(windowMs: number = WINDOW_MS): State {
   const [events, setEvents] = useState<FoodEvent[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [error, setError] = useState<string | null>(null);
@@ -22,14 +26,14 @@ export function useEvents(): State {
 
   const load = useCallback(async () => {
     try {
-      setEvents(await fetchEvents());
+      setEvents(await fetchEvents(new Date(), windowMs));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load events");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [windowMs]);
 
   useEffect(() => {
     // Fetch on mount, then on a slow interval. Every setState below happens in a

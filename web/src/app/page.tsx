@@ -3,9 +3,11 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EventCard } from "@/components/EventCard";
+import { LookAheadSlider, windowLabel } from "@/components/LookAheadSlider";
 import { NearbyList } from "@/components/NearbyList";
 import type { Focus } from "@/components/CampusMap";
-import { isPlaced } from "@/lib/events";
+import { isLocalhost } from "@/lib/devPreview";
+import { isPlaced, WINDOW_MS } from "@/lib/events";
 import { distanceFt } from "@/lib/geo";
 import { useEvents } from "@/lib/useEvents";
 import { useLocation } from "@/lib/useLocation";
@@ -32,8 +34,11 @@ const CampusMap = dynamic(
 );
 
 export default function Home() {
-  const { events, now, error, loading } = useEvents();
+  // Always WINDOW_MS in production; the local look-ahead slider widens it.
+  const [lookAheadMs, setLookAheadMs] = useState(WINDOW_MS);
+  const { events, now, error, loading } = useEvents(lookAheadMs);
   const { coords, status, request } = useLocation();
+  const [local, setLocal] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // Starts closed, which is what a phone wants and avoids the list flashing in
   // before the media query resolves; the effect below opens it on desktop.
@@ -63,6 +68,11 @@ export default function Home() {
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    const check = () => setLocal(isLocalhost());
+    check();
   }, []);
 
   useEffect(() => {
@@ -171,6 +181,20 @@ export default function Home() {
 
   const liveCount = ordered.filter((e) => new Date(e.start_time) <= now).length;
 
+  // Whether the real six-hour window is empty. The slider is offered on that
+  // basis and keeps standing once a wider window finds something, so the test
+  // has to be this count rather than what is currently on screen.
+  const sixHourCount = useMemo(
+    () =>
+      events.filter(
+        (e) =>
+          new Date(e.end_time) > now &&
+          new Date(e.start_time).getTime() < now.getTime() + WINDOW_MS,
+      ).length,
+    [events, now],
+  );
+  const showLookAhead = local && wide && sixHourCount === 0;
+
   return (
     <main className="flex h-dvh flex-col bg-paper">
       {/* Modelled on CalCentral: a navy bar with the wordmark, then a thin white
@@ -201,7 +225,7 @@ export default function Home() {
           <p className="text-sm text-muted md:text-[15px]">
             {loading
               ? "Loading…"
-              : `${ordered.length} event${ordered.length === 1 ? "" : "s"} in the next 6 hours` +
+              : `${ordered.length} event${ordered.length === 1 ? "" : "s"} in the next ${windowLabel(lookAheadMs)}` +
                 (liveCount ? ` · ${liveCount} happening now` : "")}
           </p>
           <p className="flex items-center gap-4 text-[13px] text-label">
@@ -315,6 +339,14 @@ export default function Home() {
               )}
             </div>
 
+            {showLookAhead && (
+              <LookAheadSlider
+                valueMs={lookAheadMs}
+                onChange={setLookAheadMs}
+                found={ordered.length}
+              />
+            )}
+
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               {error ? (
                 <p className="px-4 py-6 text-[15px] text-muted">{error}</p>
@@ -322,7 +354,9 @@ export default function Home() {
                 <p className="px-4 py-6 text-[15px] text-muted">Loading events…</p>
               ) : ordered.length === 0 ? (
                 <div className="px-4 py-7">
-                  <p className="text-base font-semibold text-ink">Nothing in the next 6 hours.</p>
+                  <p className="text-base font-semibold text-ink">
+                    Nothing in the next {windowLabel(lookAheadMs)}.
+                  </p>
                   <p className="mt-2 text-[13px] leading-relaxed text-label">
                     Events appear here as soon as the pipeline finds them. Check back later today.
                   </p>
