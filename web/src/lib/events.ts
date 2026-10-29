@@ -17,6 +17,7 @@ export type FoodEvent = {
   requirements: string | null;
   link: string | null;
   open_to: string | null;
+  source_urls: string[] | null;
 };
 
 const URL_BASE = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,12 +30,9 @@ export const WINDOW_MS = 6 * 60 * 60 * 1000;
 export const MAX_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 const FIELDS =
-  "id,title,start_time,end_time,building,room,lat,lng,food,food_status,food_reason,requirements,link,open_to";
+  "id,title,start_time,end_time,building,room,lat,lng,food,food_status,food_reason,requirements,link,open_to,source_urls";
 
-export async function fetchEvents(
-  now = new Date(),
-  windowMs = WINDOW_MS,
-): Promise<FoodEvent[]> {
+export async function fetchEvents(now = new Date(), windowMs = WINDOW_MS): Promise<FoodEvent[]> {
   if (!URL_BASE || !KEY) {
     throw new Error(
       "Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in web/.env.local",
@@ -70,7 +68,7 @@ function clock(d: Date, withMeridiem = true): string {
 export function whenText(e: FoodEvent): string {
   const s = new Date(e.start_time);
   const end = new Date(e.end_time);
-  const sameHalf = (s.getHours() < 12) === (end.getHours() < 12);
+  const sameHalf = s.getHours() < 12 === end.getHours() < 12;
   return `${clock(s, !sameHalf)} – ${clock(end)}`;
 }
 
@@ -87,8 +85,38 @@ export function whereText(e: FoodEvent): string {
   return [e.building, e.room].filter(Boolean).join(" ") || "Location not listed";
 }
 
-export function foodText(e: FoodEvent): string {
-  return e.food_status === "likely" ? e.food_reason || "Not mentioned" : e.food || "Free food";
+/** A "likely" event has no confirmed food, so it only gets a food line when a specific food is named. */
+export function foodText(e: FoodEvent): string | null {
+  return e.food_status === "likely" ? e.food : e.food || "Free food";
+}
+
+/** The event's link, but only if it's a web link (the card opens it as-is). */
+export function webLink(e: FoodEvent): string | null {
+  return e.link && /^https?:\/\//i.test(e.link) ? e.link : null;
+}
+
+const bare = (u: string) => u.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/$/, "");
+
+/** Other places the event was posted (besides the main link), for the card's "Also posted" line. */
+export function otherSources(e: FoodEvent): { label: string; url: string }[] {
+  const seen = new Set([bare(e.link ?? "")]);
+  const out: { label: string; url: string }[] = [];
+  for (const url of e.source_urls ?? []) {
+    if (!/^https?:\/\//i.test(url)) continue;
+    const b = bare(url);
+    const story = b.match(/^instagram\.com\/stories\/([^/]+)/);
+    const label = story
+      ? `@${story[1]} story`
+      : b.startsWith("instagram.com/")
+        ? "Instagram post"
+        : b.startsWith("events.berkeley.edu/")
+          ? "Berkeley Events"
+          : b.split("/")[0];
+    if (seen.has(b) || seen.has(label)) continue;
+    seen.add(b).add(label);
+    out.push({ label, url });
+  }
+  return out.slice(0, 4);
 }
 
 export function linkLabel(e: FoodEvent): string {

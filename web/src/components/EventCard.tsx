@@ -4,7 +4,9 @@ import {
   foodText,
   isLive,
   linkLabel,
+  otherSources,
   statusText,
+  webLink,
   whenText,
   whereText,
   type FoodEvent,
@@ -39,6 +41,9 @@ export function EventCard({ event: e, now, distanceFt, onClose, compact, tailLef
   const live = isLive(e, now);
   const likely = e.food_status === "likely";
   const entry = e.requirements || e.open_to || "Open to all";
+  const food = foodText(e);
+  const link = webLink(e);
+  const others = otherSources(e);
 
   return (
     <article className="relative flex w-full flex-col border border-navy bg-paper text-center shadow-[0_8px_24px_rgb(0_21_43/0.2)]">
@@ -75,7 +80,9 @@ export function EventCard({ event: e, now, distanceFt, onClose, compact, tailLef
           )}
         </div>
 
-        <div className={`flex flex-col border-t border-rule-soft pt-2 ${compact ? "gap-0.5" : "gap-1"}`}>
+        <div
+          className={`flex flex-col border-t border-rule-soft pt-2 ${compact ? "gap-0.5" : "gap-1"}`}
+        >
           <p className="text-[13px] font-medium text-ink">{whenText(e)}</p>
           <p className="text-[13px] leading-snug text-muted">{whereText(e)}</p>
           {distanceFt != null && (
@@ -83,15 +90,19 @@ export function EventCard({ event: e, now, distanceFt, onClose, compact, tailLef
               {distanceText(distanceFt)} · {walkText(distanceFt)}
             </p>
           )}
-          <p className={`text-[13px] leading-snug ${likely ? "text-ink" : "font-semibold text-ink"}`}>
-            {foodText(e)}
-          </p>
+          {food && (
+            <p
+              className={`text-[13px] leading-snug ${likely ? "text-ink" : "font-semibold text-ink"}`}
+            >
+              {food}
+            </p>
+          )}
           <p className="text-[11.5px] text-label">Entry · {entry}</p>
         </div>
 
-        {e.link && (
+        {link && (
           <a
-            href={e.link}
+            href={link}
             target="_blank"
             rel="noopener noreferrer"
             className={`eyebrow grid place-items-center border border-navy bg-navy text-[10.5px] text-gold transition-colors hover:bg-navy-mid ${
@@ -100,6 +111,25 @@ export function EventCard({ event: e, now, distanceFt, onClose, compact, tailLef
           >
             {linkLabel(e)} ↗
           </a>
+        )}
+
+        {others.length > 0 && (
+          <p className="-mt-1 text-[11px] leading-snug text-label">
+            Also posted:{" "}
+            {others.map((o, i) => (
+              <span key={o.url}>
+                {i > 0 && " · "}
+                <a
+                  href={o.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ink-soft underline underline-offset-2 hover:text-navy"
+                >
+                  {o.label}
+                </a>
+              </span>
+            ))}
+          </p>
         )}
       </div>
 

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EventCard } from "@/components/EventCard";
+import { InstallButton } from "@/components/InstallButton";
 import { LookAheadSlider, windowLabel } from "@/components/LookAheadSlider";
 import { NearbyList } from "@/components/NearbyList";
 import type { Focus } from "@/components/CampusMap";
@@ -75,7 +76,6 @@ export default function Home() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-
 
   // Walking distance to every placed event, once the browser shares a location.
   const distances = useMemo(() => {
@@ -195,21 +195,27 @@ export default function Home() {
       <header className="shrink-0">
         {/* Centred while it is stacked on a phone; back to wordmark-left,
             controls-right once there is room for one row. */}
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 bg-navy px-4 py-3 md:justify-between md:px-7 md:py-3.5">
+        <div className="relative flex flex-wrap items-center justify-center gap-x-4 gap-y-3 bg-navy px-4 py-3 md:justify-between md:px-7 md:py-3.5">
           <h1 className="w-full text-center text-xl font-semibold tracking-[-0.2px] md:w-auto md:text-left md:text-2xl">
             <span className="text-gold">Berkeley</span>
             <span className="text-white"> Free Food</span>
           </h1>
 
-          {/* Plain text, no icon: the glyphs were doing no work at phone size. */}
-          <button
-            type="button"
-            onClick={() => toggleList(!listOpen)}
-            aria-expanded={listOpen}
-            className="hidden h-10 border border-white/40 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10 md:block"
-          >
-            {listOpen ? "Hide list" : "Show list"}
-          </button>
+          {/* Phone: pinned to the right of the centred wordmark, so the bar stays one row. */}
+          <InstallButton className="absolute right-3 top-1/2 h-8 -translate-y-1/2 px-3 text-[13px] md:hidden" />
+
+          <div className="hidden items-center gap-3 md:flex">
+            <InstallButton className="h-10 px-5 text-sm" />
+            {/* Plain text, no icon: the glyphs were doing no work at phone size. */}
+            <button
+              type="button"
+              onClick={() => toggleList(!listOpen)}
+              aria-expanded={listOpen}
+              className="hidden h-10 border border-white/40 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10 md:block"
+            >
+              {listOpen ? "Hide list" : "Show list"}
+            </button>
+          </div>
         </div>
 
         {/* Desktop only: on a phone the list itself is the count, and this strip
@@ -253,10 +259,7 @@ export default function Home() {
           />
 
           {/* Round recentre control on the map, the way every map app does it. */}
-          <LocateButton
-            status={status}
-            onClick={() => (coords ? frameMe() : request())}
-          />
+          <LocateButton status={status} onClick={() => (coords ? frameMe() : request())} />
 
           {/* z-10 clears the map markers: maplibre sets an inline z-index of 1-3 on
               each one, and .maplibregl-map is position:relative with no z-index, so
@@ -308,7 +311,9 @@ export default function Home() {
             {loading
               ? "Loading…"
               : `${ordered.length} event${ordered.length === 1 ? "" : "s"} nearby`}
-            <span aria-hidden className="text-[11px]">▲</span>
+            <span aria-hidden className="text-[11px]">
+              ▲
+            </span>
           </button>
         )}
 
@@ -324,9 +329,7 @@ export default function Home() {
             </button>
 
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-4 py-2.5">
-              <h2 className="eyebrow text-navy">
-                {coords ? "Nearest first" : "Starting soonest"}
-              </h2>
+              <h2 className="eyebrow text-navy">{coords ? "Nearest first" : "Starting soonest"}</h2>
               {status === "denied" && (
                 <p className="text-[11px] text-muted">Location blocked — sorted by time</p>
               )}
@@ -405,9 +408,7 @@ function SiteFooter({ className = "" }: { className?: string }) {
       {/* The basemap credit OpenStreetMap's licence asks for. Off the page,
           since it is noise to anyone looking for lunch, but in the document
           for anyone or anything reading it. */}
-      <span className="sr-only">
-        Map data © OpenStreetMap contributors · tiles by OpenFreeMap
-      </span>
+      <span className="sr-only">Map data © OpenStreetMap contributors · tiles by OpenFreeMap</span>
     </footer>
   );
 }

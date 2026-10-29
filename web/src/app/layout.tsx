@@ -3,6 +3,9 @@ import { Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
+// Sub-path on GitHub Pages (/freefood). Next doesn't add it to metadata URLs, so add it here.
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
 export const metadata: Metadata = {
@@ -16,6 +19,10 @@ export const metadata: Metadata = {
   other: {
     attribution: "Map data © OpenStreetMap contributors · tiles by OpenFreeMap",
   },
+  // Installable: "Add to Home Screen" opens it full screen, like an app.
+  manifest: `${BASE}/manifest.json`,
+  icons: { apple: `${BASE}/apple-touch-icon.png` },
+  appleWebApp: { capable: true, title: "Free Food", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -30,8 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={geist.variable}>
       <body>
         {children}
-        {/* Vercel Web Analytics: page views only, cookieless, no personal data. */}
-        <Analytics />
+        {/* Vercel Web Analytics: page views only, cookieless, no personal data.
+            Only on the Vercel deployment; GitHub Pages has no analytics endpoint. */}
+        {process.env.NEXT_PUBLIC_VERCEL_ENV && <Analytics />}
       </body>
     </html>
   );

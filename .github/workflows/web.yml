@@ -1,14 +1,14 @@
-# Builds the web version of the app and publishes dhilen.com on GitHub Pages:
-#   dhilen.com/                  -> site/index.html (redirects to LinkedIn)
-#   dhilen.com/freefood/ -> app/ exported for web
-# The two EXPO_PUBLIC_* values are the app's read-only Supabase URL and publishable key,
-# stored as repository *variables* (Settings > Secrets and variables > Actions > Variables).
+# Builds the website and publishes dhilen.com on GitHub Pages:
+#   dhilen.com/          -> site/index.html (redirects to LinkedIn)
+#   dhilen.com/freefood/ -> web/ (Next.js, static export)
+# The two EXPO_PUBLIC_* values are the read-only Supabase URL and publishable key (shared with
+# the app), stored as repository *variables* (Settings > Secrets and variables > Actions > Variables).
 name: web
 
 on:
   push:
     branches: [main]
-    paths: ["app/**", "site/**", ".github/workflows/web.yml"]
+    paths: ["web/**", "site/**", ".github/workflows/web.yml"]
   workflow_dispatch:
 
 permissions:
@@ -32,24 +32,24 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
-        working-directory: app
-      - name: Export web build
-        working-directory: app
+        working-directory: web
+      - name: Build the website
+        working-directory: web
         env:
-          WEB_BASE_URL: /freefood
-          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
-          EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_BASE_PATH: /freefood
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          test -n "$EXPO_PUBLIC_SUPABASE_URL" && test -n "$EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" \
+          test -n "$NEXT_PUBLIC_SUPABASE_URL" && test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" \
             || { echo "Add the EXPO_PUBLIC_* repository variables first"; exit 1; }
-          npx expo export --platform web --output-dir dist
+          npm run build
       - name: Assemble site
         run: |
           mkdir -p _site
           cp -R site/. _site/
-          cp -R app/dist _site/freefood
+          cp -R web/out _site/freefood
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
