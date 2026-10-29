@@ -71,7 +71,11 @@ For each event:
   tech talks, career/networking events, receptions, mixers, socials, study breaks, club general meetings,
   celebrations/festivals, and events framed around a meal ("over lunch", "lunch talk") unless they say to
   bring your own. "none" otherwise.
-  Food that must be bought (bake sale, fundraiser, restaurant outing) is "none".
+  Food that must be bought (bake sale, fundraiser, restaurant outing) is "none". So are deals and discounts
+  (% off, BOGO, member/student discounts, promo codes, sponsor deals): only food given out free counts.
+  A free giveaway with a time and place ("free boba for the first 50 people, Fri 2-4pm") is an event.
+  For a restaurant, cafe or shop posting about itself, use "stated" only for food it gives out free, never
+  "likely": its menu, specials and parties are food you buy.
   For events run by a student club, use "stated" only when the text or flyer actually offers food; never infer it.
 - host: "club" if a student club/organization runs it (including GMs, club socials, club info sessions),
   "university" for departments, campus offices and programs, "company" for employer-run events, else "other".
