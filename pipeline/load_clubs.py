@@ -1,6 +1,7 @@
 """Sync data/clubs.csv into the Supabase clubs table. Handles in ACTIVE are scraped on Instagram;
 toggle `active` later in the Supabase table editor.
 
+Runs on GitHub Actions (.github/workflows/clubs.yml) whenever this file or clubs.csv changes on main.
 Run from the repo root:  .venv/bin/python -m pipeline.load_clubs
 """
 import csv
