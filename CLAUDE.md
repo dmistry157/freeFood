@@ -40,3 +40,4 @@ sources ──► raw_items (Supabase) ──► Gemini extraction ──► geo
 - Gmail must only ever read the `FreeFood` label, never the wider inbox.
 - `SUPABASE_SECRET_KEY` bypasses row-level security. Use it only in the pipeline, never in the app.
 - Work on a branch and open a PR to `main`. `main` is what GitHub Actions runs.
+- Commit messages: no `Co-Authored-By: Claude` line.
