@@ -333,7 +333,7 @@ def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
     print(f"extract: {len(items)} pending, {len(done_without_llm)} done without Gemini (no keywords / already over / stale), "
           f"{len(todo)} to Gemini{' (urgent only)' if urgent_only else ''}, max {max_calls or 'unlimited'} calls")
 
-    results, calls, ok_calls, deferred = [], 0, 0, set()
+    results, calls, ok_models, deferred = [], 0, set(), set()
     queue = list(batches(todo))
     while queue:
         group = queue.pop(0)
@@ -355,7 +355,10 @@ def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
             if len(group) > 1:  # find the item Gemini rejects: retry the batch one item at a time
                 print(f"Batch {ids_} rejected (400); retrying its items one by one.")
                 queue[:0] = [[it] for it in group]
-            elif ok_calls:  # rejected on its own while other calls work: drop it so it can't block the queue
+            # Rejected on its own by a model that has worked this run: the item is the problem, so drop it
+            # so it can't block the queue. (Not if only an earlier model worked: a fallback model that
+            # rejects every request would otherwise drop good items.)
+            elif MODELS[_Models.i] in ok_models:
                 print(f"Item {ids_[0]} rejected by Gemini (400: {err}); dropping it.")
                 if not dry_run:
                     mark_processed(group[0])
@@ -367,7 +370,7 @@ def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
                 break
             continue
         calls += 1
-        ok_calls += 1
+        ok_models.add(MODELS[_Models.i])
         by_id = {it["id"]: it for it, _ in batch}
         kept_now = []
         for ev in raw:
