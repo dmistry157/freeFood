@@ -24,13 +24,14 @@ ACTIVE = {
     "sps_berkeley", "musaberkeley",
     # Added 2026-10-24: not on calevents; missed their Glade event:
     "uavs_berkeley",
-    # Added 2026-10-29 (not in CalLink's directory, see EXTRA):
-    "tasa.berkeley",
+    # Added 2026-10-29 (not in CalLink's directory, see EXTRA). Crazy Bee is a business: free giveaways only.
+    "tasa.berkeley", "crazybee_berkeley",
 }
 
 # Accounts not in CalLink's directory (so not in clubs.csv): name -> handle.
 EXTRA = {
     "TASA (Instagram only)": "tasa.berkeley",
+    "Crazy Bee (business)": "crazybee_berkeley",
 }
 
 rows = {}
