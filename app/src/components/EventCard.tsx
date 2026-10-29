@@ -1,6 +1,6 @@
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts, shadow } from '../theme';
-import { FoodEvent, isLive, linkLabel, statusText, whenText, whereText } from '../events';
+import { FoodEvent, isLive, linkLabel, otherSources, statusText, whenText, whereText } from '../events';
 
 type Props = {
   event: FoodEvent;
@@ -16,6 +16,7 @@ export function EventCard({ event: e, now, onClose, arrow, flat }: Props) {
   const statusColor = live ? colors.live : colors.muted;
   const likely = e.food_status === 'likely';
   const food = likely ? e.food_reason || 'Not mentioned' : e.food || 'Free food';
+  const others = otherSources(e);
 
   return (
     <View style={[styles.card, !flat && shadow.card]}>
@@ -57,6 +58,18 @@ export function EventCard({ event: e, now, onClose, arrow, flat }: Props) {
           <Text style={styles.buttonText}>{linkLabel(e)}  ↗</Text>
         </Pressable>
       )}
+
+      {others.length > 0 && (
+        <Text style={styles.sources}>
+          Also posted:{' '}
+          {others.map((s, i) => (
+            <Text key={s.url}>
+              {i > 0 && ' · '}
+              <Text style={styles.sourceLink} onPress={() => Linking.openURL(s.url)} accessibilityRole="link">{s.label}</Text>
+            </Text>
+          ))}
+        </Text>
+      )}
     </View>
   );
 }
@@ -88,5 +101,7 @@ const styles = StyleSheet.create({
   rowLabel: { width: 68, fontFamily: fonts.regular, fontSize: 12, color: colors.label, paddingTop: 1 },
   rowValue: { flex: 1, fontFamily: fonts.regular, fontSize: 14, lineHeight: 19, color: colors.ink },
   button: { height: 44, borderRadius: 12, backgroundColor: colors.ink, alignItems: 'center', justifyContent: 'center' },
+  sources: { marginTop: -4, fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: colors.label, textAlign: 'center' },
+  sourceLink: { color: colors.inkSoft, textDecorationLine: 'underline' },
   buttonText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.card },
 });

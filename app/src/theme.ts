@@ -6,6 +6,7 @@ export const colors = {
   muted: '#5C5850',
   label: '#6A665E',
   live: '#C8261E',
+  gold: '#FDB515', // live pins (Berkeley gold, from Mohul's design)
   soon: '#9A968E',
   card: '#FFFFFF',
   tag: '#F1EEE6',

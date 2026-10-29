@@ -15,12 +15,13 @@ export type FoodEvent = {
   requirements: string | null;
   link: string | null;
   open_to: string | null;
+  source_urls: string[] | null;
 };
 
 const URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const KEY = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const WINDOW_MS = 6 * 60 * 60 * 1000; // show events starting within the next 6 hours
-const FIELDS = 'id,title,start_time,end_time,building,room,lat,lng,food,food_status,food_reason,requirements,link,open_to';
+const FIELDS = 'id,title,start_time,end_time,building,room,lat,lng,food,food_status,food_reason,requirements,link,open_to,source_urls';
 
 export async function fetchEvents(now = new Date()): Promise<FoodEvent[]> {
   if (!URL || !KEY) throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL / _PUBLISHABLE_KEY in app/.env');
@@ -70,6 +71,26 @@ export function linkLabel(e: FoodEvent): string {
   if (link.includes('callink.berkeley.edu')) return 'View on CalLink';
   if (link.includes('events.berkeley.edu')) return 'Event page';
   return 'Open link';
+}
+
+const bare = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+/** Other places the event was posted (besides the main link), for the card's "Also posted" line. */
+export function otherSources(e: FoodEvent): { label: string; url: string }[] {
+  const seen = new Set([bare(e.link ?? '')]);
+  const out: { label: string; url: string }[] = [];
+  for (const url of e.source_urls ?? []) {
+    const b = bare(url);
+    const story = b.match(/^instagram\.com\/stories\/([^/]+)/);
+    const label = story ? `@${story[1]} story`
+      : b.startsWith('instagram.com/') ? 'Instagram post'
+      : b.startsWith('events.berkeley.edu/') ? 'Berkeley Events'
+      : b.split('/')[0];
+    if (seen.has(b) || seen.has(label)) continue;
+    seen.add(b).add(label);
+    out.push({ label, url });
+  }
+  return out.slice(0, 4);
 }
 
 /** Spread pins that share a building so each stays tappable. */

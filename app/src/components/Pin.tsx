@@ -1,57 +1,38 @@
-import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme';
 
-/** Map pin from the design: white-ringed dot, red + pulsing halo when live, grey when soon. */
-export function Pin({ live, selected }: { live: boolean; selected: boolean }) {
-  const [pulse] = useState(() => new Animated.Value(0));
+// Live pins glow gold: a halo fading outward from the gold ring. Static, no animation.
+const DROP = '0px 1px 3px rgba(22, 21, 15, 0.3)';
+const GLOW = '0px 0px 0px 3px rgba(253, 181, 21, 0.6), 0px 0px 14px 7px rgba(253, 181, 21, 0.45)';
 
-  useEffect(() => {
-    if (!live) return;
-    const loop = Animated.loop(
-      Animated.timing(pulse, { toValue: 1, duration: 2000, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [live, pulse]);
-
-  const size = selected ? 26 : live ? 20 : 17;
-  const color = live ? colors.live : colors.soon;
+/** Map pin: a white badge with the food emoji inside, gold ring + glow when live, grey when soon. */
+export function Pin({ live, selected, emoji }: { live: boolean; selected: boolean; emoji: string }) {
+  const size = selected ? 42 : live ? 36 : 30;
   return (
     <View style={styles.target} collapsable={false}>
-      {live && (
-        <Animated.View
-          style={[
-            styles.halo,
-            {
-              backgroundColor: colors.live,
-              opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0] }),
-              transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1.5] }) }],
-            },
-          ]}
-        />
-      )}
       <View
         style={[
-          styles.dot,
-          { width: size, height: size, borderRadius: size / 2, backgroundColor: color },
-          selected && { borderColor: colors.card, shadowColor: live ? colors.live : colors.muted, shadowOpacity: 0.9, shadowRadius: 2 },
+          styles.badge,
+          { width: size, height: size, borderRadius: size / 2, borderColor: live ? colors.gold : colors.soon },
+          { boxShadow: live ? `${GLOW}, ${DROP}` : DROP },
+          selected && styles.selected,
         ]}
-      />
+      >
+        <Text style={{ fontSize: Math.round(size * 0.55), lineHeight: Math.round(size * 0.7) }} allowFontScaling={false}>
+          {emoji}
+        </Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  target: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
-  halo: { position: 'absolute', width: 36, height: 36, borderRadius: 18 },
-  dot: {
+  target: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
+  badge: {
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 3,
-    borderColor: colors.card,
-    shadowColor: colors.ink,
-    shadowOpacity: 0.35,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 3,
+    backgroundColor: colors.card,
   },
+  selected: { borderWidth: 3.5 },
 });
