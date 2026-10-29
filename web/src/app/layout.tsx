@@ -7,10 +7,7 @@ import { BASE_PATH, SITE_ORIGIN, SITE_URL } from "@/lib/site";
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
 const TITLE = "Berkeley Free Food";
-const DESCRIPTION =
-  "Find free food at UC Berkeley right now. A live map of campus events giving away free " +
-  "pizza, boba, snacks and meals — gold means it is happening now, navy means it starts " +
-  "within six hours. Free, no sign-up, works on your phone.";
+const DESCRIPTION = "A map of free food around Berkeley.";
 
 export const metadata: Metadata = {
   // Everything below may use a path; Next resolves it against this.
