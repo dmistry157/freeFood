@@ -24,6 +24,13 @@ ACTIVE = {
     "sps_berkeley", "musaberkeley",
     # Added 2026-10-24: not on calevents; missed their Glade event:
     "uavs_berkeley",
+    # Added 2026-10-29 (not in CalLink's directory, see EXTRA):
+    "tasa.berkeley",
+}
+
+# Accounts not in CalLink's directory (so not in clubs.csv): name -> handle.
+EXTRA = {
+    "TASA (Instagram only)": "tasa.berkeley",
 }
 
 rows = {}
@@ -31,6 +38,9 @@ for r in csv.DictReader(OUT.open()):
     rows[r["name"]] = {"name": r["name"], "callink_url": r["callink_url"],
                        "instagram_handle": r["instagram"] or None, "is_public": True,
                        "active": r["instagram"] in ACTIVE}
+for name, handle in EXTRA.items():
+    rows[name] = {"name": name, "callink_url": None, "instagram_handle": handle, "is_public": True,
+                  "active": handle in ACTIVE}
 resp = requests.post(f"{REST}/clubs", params={"on_conflict": "name"}, json=list(rows.values()), timeout=60,
                      headers={**HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"})
 resp.raise_for_status()
