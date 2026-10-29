@@ -16,7 +16,8 @@ from pathlib import Path
 W, H = 1200, 630
 FPS, SECONDS = 30, 3.0
 NAVY, NAVY_SOFT = "#00264c", "#013a6b"
-GOLD, GOLD_DEEP = "#fdb515", "#e09a00"
+INK, COCOA = "#1b2a3d", "#a8691a"
+GOLD, GOLD_DEEP = "#fdb515", "#c9820c"
 CREAM, WHITE = "#fff3d6", "#ffffff"
 POSTER_T = 0.58  # peak celebration: arms overhead, eyes squeezed shut, wordmark settled
 
@@ -92,59 +93,87 @@ def frame(t: float) -> str:
                              (10 if i % 2 else 15) * fade, burst * 220 + i * 18,
                              WHITE if i % 3 else GOLD, 0.85 * fade))
 
-    o.append(f'<g transform="translate(600 {y - 14:.1f}) rotate({tilt:.2f}) scale(0.93 {squash * 0.93:.3f}) translate(-600 24)">')
+    o.append(f'<g transform="translate(600 {y - 14:.1f}) rotate({tilt:.2f}) '
+             f'scale(0.93 {squash * 0.93:.3f}) translate(-600 24)">')
 
     # Shadow, tight when airborne.
     lift = clamp01(-hop / 34)
     o.append(f'<ellipse cx="600" cy="588" rx="{150 - 36 * lift:.0f}" ry="{20 - 5 * lift:.0f}" '
              f'fill="#000" opacity="{0.26 - 0.1 * lift:.3f}"/>')
 
-    # Legs, body, belly.
-    for cx in (548, 652):
-        o.append(f'<ellipse cx="{cx}" cy="552" rx="40" ry="32" fill="{GOLD_DEEP}"/>')
-    o.append('<ellipse cx="600" cy="452" rx="132" ry="112" fill="url(#fur)"/>')
-    o.append(f'<ellipse cx="600" cy="474" rx="86" ry="78" fill="{CREAM}" opacity="0.95"/>')
-
-    # Arms. They swing past horizontal so the pose reads as "up", not "out".
+    # The silhouette, as plain shapes. It is emitted twice: once fat and inked to make
+    # the outline, then again in fur on top. Drawing it this way means the outline
+    # follows the bear's outer edge only, with no seams where the parts overlap.
     PIVOT_Y, REACH = 406, 98
-    paw = {}
+    paw, limbs = {}, []
     for side in (-1, 1):
         ax = 600 + side * 120
         ang = side * -142 * excite
         rad = math.radians(ang)
         paw[side] = (ax - REACH * math.sin(rad), PIVOT_Y + REACH * math.cos(rad))
-        o.append(f'<g transform="rotate({ang:.1f} {ax} {PIVOT_Y})">'
-                 f'<rect x="{ax - 27:.0f}" y="380" width="54" height="128" rx="27" fill="{GOLD_DEEP}"/>'
-                 f'<circle cx="{ax:.0f}" cy="504" r="30" fill="url(#fur)"/></g>')
+        limbs.append((f'rotate({ang:.1f} {ax} {PIVOT_Y})',
+                      f'<rect x="{ax - 33:.0f}" y="384" width="66" height="124" rx="33" {{}}/>'
+                      f'<circle cx="{ax:.0f}" cy="504" r="35" {{}}/>'))
 
-    # Head.
-    for ex, ey in ((526, 196), (674, 196)):
-        o.append(f'<circle cx="{ex}" cy="{ey}" r="44" fill="url(#fur)"/>'
-                 f'<circle cx="{ex}" cy="{ey + 4}" r="23" fill="{CREAM}" opacity="0.85"/>')
-    o.append('<circle cx="600" cy="278" r="118" fill="url(#fur)"/>')
-    o.append(f'<ellipse cx="600" cy="316" rx="60" ry="45" fill="{CREAM}"/>')
+    trunk = (f'<ellipse cx="548" cy="556" rx="42" ry="33" {{}}/>'
+             f'<ellipse cx="652" cy="556" rx="42" ry="33" {{}}/>'
+             f'<ellipse cx="600" cy="452" rx="134" ry="113" {{}}/>'
+             f'<circle cx="524" cy="192" r="47" {{}}/><circle cx="676" cy="192" r="47" {{}}/>'
+             f'<circle cx="600" cy="276" r="122" {{}}/>')
 
-    # Eyes: open and shining at rest, squeezed shut with joy at the peak.
+    def cast(attrs):
+        out = [trunk.replace("{}", attrs)]
+        for tf, shape in limbs:
+            out.append(f'<g transform="{tf}">{shape.replace("{}", attrs)}</g>')
+        return "".join(out)
+
+    o.append(cast(f'fill="{INK}" stroke="{INK}" stroke-width="17" stroke-linejoin="round"'))
+    o.append(cast('fill="url(#fur)"'))
+
+    # Belly and inner ears, on top of the fur.
+    for ex in (524, 676):
+        o.append(f'<circle cx="{ex}" cy="198" r="24" fill="{COCOA}" opacity="0.9"/>')
+    o.append(f'<ellipse cx="600" cy="474" rx="84" ry="76" fill="{CREAM}" opacity="0.92"/>')
+
+    # Muzzle.
+    o.append(f'<ellipse cx="600" cy="316" rx="62" ry="46" fill="{CREAM}"/>')
+
+    # Eyes: wide and shining at rest, squeezed shut with joy at the peak.
     shut = clamp01(excite * 1.5)
+
+    # Brows, lifted as the excitement builds. They come off once the eyes squeeze
+    # shut, since the closed arcs read as brows themselves and four stacked arcs
+    # just look like a second pair of eyes.
+    if shut <= 0.45:
+        brow = 6 + 10 * excite
+        for ex in (562, 638):
+            o.append(f'<path d="M{ex - 26} {230 - brow:.0f} Q{ex} {216 - brow:.0f} {ex + 26} {228 - brow:.0f}" '
+                     f'stroke="{INK}" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.7"/>')
     for ex in (562, 638):
         if shut > 0.45:
-            o.append(f'<path d="M{ex - 23} 266 Q{ex} 243 {ex + 23} 266" stroke="{NAVY}" '
-                     f'stroke-width="9" fill="none" stroke-linecap="round"/>')
+            o.append(f'<path d="M{ex - 25} 268 Q{ex} 242 {ex + 25} 268" stroke="{INK}" '
+                     f'stroke-width="10" fill="none" stroke-linecap="round"/>')
         else:
-            o.append(f'<ellipse cx="{ex}" cy="262" rx="15" ry="{16 - 9 * shut / 0.45:.1f}" fill="{NAVY}"/>')
-            o.append(f'<circle cx="{ex + 5}" cy="256" r="5" fill="{WHITE}" opacity="0.9"/>')
-    # Rosy cheeks, brighter when thrilled.
-    for cx in (520, 680):
-        o.append(f'<ellipse cx="{cx}" cy="300" rx="25" ry="16" fill="#ff8a6b" opacity="{0.3 + 0.4 * excite:.3f}"/>')
+            o.append(f'<ellipse cx="{ex}" cy="262" rx="17" ry="{19 - 10 * shut / 0.45:.1f}" fill="{INK}"/>')
+            o.append(f'<circle cx="{ex + 6}" cy="255" r="6" fill="{WHITE}"/>')
+            o.append(f'<circle cx="{ex - 5}" cy="268" r="3" fill="{WHITE}" opacity="0.65"/>')
 
-    o.append(f'<ellipse cx="600" cy="300" rx="19" ry="13" fill="{NAVY}"/>')
+    # Rosy cheeks, brighter when thrilled.
+    for cx in (516, 684):
+        o.append(f'<ellipse cx="{cx}" cy="302" rx="26" ry="17" fill="#ff8a6b" opacity="{0.3 + 0.4 * excite:.3f}"/>')
+
+    # Nose, with a highlight, over a muzzle line.
+    o.append(f'<path d="M600 312 L600 330" stroke="{INK}" stroke-width="6" stroke-linecap="round"/>')
+    o.append(f'<ellipse cx="600" cy="300" rx="21" ry="14" fill="{INK}"/>')
+    o.append(f'<ellipse cx="594" cy="296" rx="7" ry="4" fill="{WHITE}" opacity="0.55"/>')
+
     # Mouth: a smile that opens into a grin.
-    grin = 10 + 26 * excite
-    o.append(f'<path d="M{600 - grin:.0f} 324 Q600 {336 + 20 * excite:.0f} {600 + grin:.0f} 324" '
-             f'stroke="{NAVY}" stroke-width="8" fill="none" stroke-linecap="round"/>')
+    grin = 12 + 28 * excite
+    o.append(f'<path d="M{600 - grin:.0f} 330 Q600 {344 + 20 * excite:.0f} {600 + grin:.0f} 330" '
+             f'stroke="{INK}" stroke-width="9" fill="none" stroke-linecap="round"/>')
     if excite > 0.35:
-        o.append(f'<ellipse cx="600" cy="{336:.0f}" rx="{20 * excite:.0f}" ry="{13 * excite:.0f}" fill="{NAVY}"/>')
-        o.append(f'<ellipse cx="600" cy="{342:.0f}" rx="{11 * excite:.0f}" ry="{7 * excite:.0f}" fill="#ff8a6b"/>')
+        o.append(f'<ellipse cx="600" cy="{340:.0f}" rx="{21 * excite:.0f}" ry="{14 * excite:.0f}" fill="{INK}"/>')
+        o.append(f'<ellipse cx="600" cy="{346:.0f}" rx="{12 * excite:.0f}" ry="{8 * excite:.0f}" fill="#ff8a6b"/>')
 
     # The pizza: falls from above, then rides the right paw. Drawn last within the
     # bear group so the head can never cover it.
@@ -155,8 +184,8 @@ def frame(t: float) -> str:
         pr = -160 * (1 - drop) + 9 * math.sin(t * 7) * excite
         ps = 0.62 + 0.08 * excite
         o.append(f'<g transform="translate({px:.1f} {py:.1f}) rotate({pr:.1f}) scale({ps:.3f})" opacity="{min(1, drop * 3):.2f}">'
-                 f'<path d="M0 -92 L74 56 Q0 86 -74 56 Z" fill="{GOLD}" stroke="{GOLD_DEEP}" stroke-width="8" stroke-linejoin="round"/>'
-                 f'<path d="M0 -64 L56 44 Q0 68 -56 44 Z" fill="#e8552f"/>'
+                 f'<path d="M0 -92 L74 56 Q0 86 -74 56 Z" fill="{GOLD}" stroke="{INK}" stroke-width="9" stroke-linejoin="round"/>'
+                 f'<path d="M0 -62 L54 42 Q0 66 -54 42 Z" fill="#e8552f"/>'
                  f'<circle cx="-20" cy="16" r="11" fill="#b8321c"/><circle cx="22" cy="8" r="10" fill="#b8321c"/>'
                  f'<circle cx="0" cy="-28" r="9" fill="#b8321c"/></g>')
     o.append("</g>")
