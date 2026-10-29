@@ -16,8 +16,9 @@ from pathlib import Path
 W, H = 1200, 630
 FPS, SECONDS = 30, 3.0
 NAVY, NAVY_SOFT = "#00264c", "#013a6b"
-INK, COCOA = "#1b2a3d", "#a8691a"
+INK, COCOA = "#14171b", "#8a4f14"
 GOLD, GOLD_DEEP = "#fdb515", "#c9820c"
+FUR, FUR_DEEP = "#d2822c", "#a65f17"
 CREAM, WHITE = "#fff3d6", "#ffffff"
 POSTER_T = 0.58  # peak celebration: arms overhead, eyes squeezed shut, wordmark settled
 
@@ -70,7 +71,7 @@ def frame(t: float) -> str:
       <stop offset="0" stop-color="{NAVY_SOFT}"/><stop offset="1" stop-color="{NAVY}"/>
     </radialGradient>
     <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="{GOLD}"/><stop offset="1" stop-color="{GOLD_DEEP}"/>
+      <stop offset="0" stop-color="{FUR}"/><stop offset="1" stop-color="{FUR_DEEP}"/>
     </linearGradient>
     <filter id="warm" x="-40%" y="-40%" width="180%" height="180%">
       <feGaussianBlur stdDeviation="26"/>
@@ -118,8 +119,8 @@ def frame(t: float) -> str:
     trunk = (f'<ellipse cx="548" cy="556" rx="42" ry="33" {{}}/>'
              f'<ellipse cx="652" cy="556" rx="42" ry="33" {{}}/>'
              f'<ellipse cx="600" cy="452" rx="134" ry="113" {{}}/>'
-             f'<circle cx="524" cy="192" r="47" {{}}/><circle cx="676" cy="192" r="47" {{}}/>'
-             f'<circle cx="600" cy="276" r="122" {{}}/>')
+             f'<ellipse cx="516" cy="196" rx="54" ry="50" {{}}/><ellipse cx="684" cy="196" rx="54" ry="50" {{}}/>'
+             f'<ellipse cx="600" cy="280" rx="134" ry="117" {{}}/>')
 
     def cast(attrs):
         out = [trunk.replace("{}", attrs)]
@@ -127,12 +128,12 @@ def frame(t: float) -> str:
             out.append(f'<g transform="{tf}">{shape.replace("{}", attrs)}</g>')
         return "".join(out)
 
-    o.append(cast(f'fill="{INK}" stroke="{INK}" stroke-width="17" stroke-linejoin="round"'))
+    o.append(cast(f'fill="{INK}" stroke="{INK}" stroke-width="21" stroke-linejoin="round"'))
     o.append(cast('fill="url(#fur)"'))
 
     # Belly and inner ears, on top of the fur.
-    for ex in (524, 676):
-        o.append(f'<circle cx="{ex}" cy="198" r="24" fill="{COCOA}" opacity="0.9"/>')
+    for ex in (516, 684):
+        o.append(f'<ellipse cx="{ex}" cy="202" rx="29" ry="26" fill="{COCOA}"/>')
     o.append(f'<ellipse cx="600" cy="474" rx="84" ry="76" fill="{CREAM}" opacity="0.92"/>')
 
     # Muzzle.
@@ -146,17 +147,22 @@ def frame(t: float) -> str:
     # just look like a second pair of eyes.
     if shut <= 0.45:
         brow = 6 + 10 * excite
-        for ex in (562, 638):
-            o.append(f'<path d="M{ex - 26} {230 - brow:.0f} Q{ex} {216 - brow:.0f} {ex + 26} {228 - brow:.0f}" '
-                     f'stroke="{INK}" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.7"/>')
+        for side, ex in ((-1, 548), (1, 652)):
+            # Angled down toward the nose and well apart, or the pair reads as one brow.
+            inner, outer = 230 - brow, 208 - brow
+            o.append(f'<path d="M{ex - side * 34} {outer:.0f} Q{ex - side * 4} {outer - 6:.0f} '
+                     f'{ex + side * 32} {inner:.0f}" stroke="{INK}" stroke-width="12" '
+                     f'fill="none" stroke-linecap="round"/>')
     for ex in (562, 638):
         if shut > 0.45:
             o.append(f'<path d="M{ex - 25} 268 Q{ex} 242 {ex + 25} 268" stroke="{INK}" '
                      f'stroke-width="10" fill="none" stroke-linecap="round"/>')
         else:
-            o.append(f'<ellipse cx="{ex}" cy="262" rx="17" ry="{19 - 10 * shut / 0.45:.1f}" fill="{INK}"/>')
-            o.append(f'<circle cx="{ex + 6}" cy="255" r="6" fill="{WHITE}"/>')
-            o.append(f'<circle cx="{ex - 5}" cy="268" r="3" fill="{WHITE}" opacity="0.65"/>')
+            lid = 10 * shut / 0.45
+            o.append(f'<ellipse cx="{ex}" cy="264" rx="26" ry="{25 - lid:.1f}" fill="{WHITE}" '
+                     f'stroke="{INK}" stroke-width="6"/>')
+            o.append(f'<circle cx="{ex + 4}" cy="{256 + lid * 0.4:.0f}" r="12" fill="{INK}"/>')
+            o.append(f'<circle cx="{ex + 8}" cy="251" r="4" fill="{WHITE}"/>')
 
     # Rosy cheeks, brighter when thrilled.
     for cx in (516, 684):
@@ -168,9 +174,11 @@ def frame(t: float) -> str:
     o.append(f'<ellipse cx="594" cy="296" rx="7" ry="4" fill="{WHITE}" opacity="0.55"/>')
 
     # Mouth: a smile that opens into a grin.
-    grin = 12 + 28 * excite
+    grin = 30 + 24 * excite
     o.append(f'<path d="M{600 - grin:.0f} 330 Q600 {344 + 20 * excite:.0f} {600 + grin:.0f} 330" '
-             f'stroke="{INK}" stroke-width="9" fill="none" stroke-linecap="round"/>')
+             f'stroke="{INK}" stroke-width="11" fill="none" stroke-linecap="round"/>')
+    o.append(f'<path d="M{600 - grin:.0f} 330 q-9 -5 -11 -15 M{600 + grin:.0f} 330 q9 -5 11 -15" '
+             f'stroke="{INK}" stroke-width="11" fill="none" stroke-linecap="round"/>')
     if excite > 0.35:
         o.append(f'<ellipse cx="600" cy="{340:.0f}" rx="{21 * excite:.0f}" ry="{14 * excite:.0f}" fill="{INK}"/>')
         o.append(f'<ellipse cx="600" cy="{346:.0f}" rx="{12 * excite:.0f}" ry="{8 * excite:.0f}" fill="#ff8a6b"/>')
