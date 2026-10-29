@@ -4,7 +4,8 @@ Run from the repo root:  .venv/bin/python -m pipeline.sources.berkeley_events
 """
 import html
 import time
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -17,10 +18,11 @@ FIELDS = "location,description,custom_room,registration,tags,event_types,group_t
 HEADERS = {"User-Agent": "freeFoodTracker/0.1 (github.com/dmistry157/freeFood)"}
 DAYS_AHEAD = 7
 DELAY_S = 1.0  # be polite: one request per second
+LA = ZoneInfo("America/Los_Angeles")
 
 
 def fetch(days: int = DAYS_AHEAD) -> list[dict]:
-    start = date.today()
+    start = datetime.now(LA).date()  # Berkeley's date; GitHub's runners are on UTC
     url = f"{BASE}/start_date/{start}/end_date/{start + timedelta(days=days)}/response_fields/{FIELDS}"
     events, page = [], 1
     while True:

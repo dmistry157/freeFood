@@ -9,6 +9,7 @@ Flow per unprocessed raw item:
      When a model's daily quota runs out, fall back to the next model; if all are out, stop
      and leave the rest for the next run.
   4. Keep events with food_status stated|likely (club events: stated only), confidence >= 0.6, not already over.
+  5. A batch Gemini rejects (400) is retried one item at a time; an item rejected on its own is dropped.
 Stored Instagram images are deleted after they're read.
 
 Run from the repo root:  .venv/bin/python -m pipeline.extract [--dry-run] [--limit N] [--ids 1,2,3]
@@ -42,6 +43,7 @@ LA = ZoneInfo("America/Los_Angeles")
 MIN_CONFIDENCE = 0.6
 DEFAULT_DURATION = timedelta(hours=1)
 STALE_POST = timedelta(days=7)  # Instagram items not read within a week are dropped unread
+STALE_ITEM = timedelta(days=7)  # any item still unread after a week (keeps failing, say) is dropped
 MAX_IMAGES = 4
 MAX_SIDE = 1024
 BANNER_RATIO = 2.2
@@ -271,7 +273,7 @@ def batches(items: list[dict]):
 
 
 def fetch_items(limit: int, ids: list[int] | None) -> list[dict]:
-    params = {"select": "id,source,source_id,text,media_paths,posted_at", "order": "fetched_at.asc", "limit": limit}
+    params = {"select": "id,source,source_id,text,media_paths,posted_at,fetched_at", "order": "fetched_at.asc", "limit": limit}
     params.update({"id": f"in.({','.join(map(str, ids))})"} if ids else {"processed": "is.false", "text": "not.is.null"})
     resp = requests.get(f"{REST}/raw_items", headers=HEADERS, params=params, timeout=30)
     resp.raise_for_status()
@@ -305,15 +307,23 @@ def priority(item: dict):
             "".join(chr(0x10FFFF - ord(c)) for c in posted))  # newest posted first
 
 
+def bad_request(err: Exception) -> bool:
+    """Gemini rejected this request itself (HTTP 400), so sending the same items again won't help."""
+    return isinstance(err, requests.HTTPError) and err.response is not None and err.response.status_code == 400
+
+
 def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
-        urgent_only: bool = False, max_calls: int | None = None) -> list[dict]:
+        urgent_only: bool = False, max_calls: int | None = None, store=None) -> list[dict]:
     """Extract events from unprocessed raw items. Returns kept events (with raw_item id + source).
     urgent_only: just items that say tonight/today/in N mins (hourly runs, to spare Gemini quota).
-    max_calls: Gemini calls allowed this run; the rest wait for the next run."""
+    max_calls: Gemini calls allowed this run; the rest wait for the next run.
+    store: called with each batch's events before its items are marked processed (dedupe.store),
+    so a crash mid-run can't lose events whose items were already marked done."""
     now = datetime.now(timezone.utc)
     items = fetch_items(limit, ids)
     done_without_llm = [it for it in items if not needs_llm(it) or ((listed_start(it) or now) < now - DEFAULT_DURATION)
-                        or (it["source"] == "instagram" and posted(it) and posted(it) < now - STALE_POST)]
+                        or (it["source"] == "instagram" and posted(it) and posted(it) < now - STALE_POST)
+                        or (parse_time(it.get("fetched_at")) or now) < now - STALE_ITEM]
     if not dry_run:
         for it in done_without_llm:
             mark_processed(it)
@@ -323,8 +333,10 @@ def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
     print(f"extract: {len(items)} pending, {len(done_without_llm)} done without Gemini (no keywords / already over / stale), "
           f"{len(todo)} to Gemini{' (urgent only)' if urgent_only else ''}, max {max_calls or 'unlimited'} calls")
 
-    results, calls = [], 0
-    for group in batches(todo):
+    results, calls, ok_models, deferred = [], 0, set(), set()
+    queue = list(batches(todo))
+    while queue:
+        group = queue.pop(0)
         if max_calls is not None and calls >= max_calls:
             print("Call cap reached; the remaining items wait for the next run.")
             break
@@ -334,18 +346,42 @@ def run(limit: int = 500, ids: list[int] | None = None, dry_run: bool = False,
         except RateLimited as err:
             print(f"Stopping: {err}. The remaining items wait for the next run.")
             break
-        except Exception as err:  # bad request, timeout, cut-off JSON: skip this batch, retry it next run
+        except Exception as err:
             calls += 1
-            print(f"Batch {[it['id'] for it, _ in batch]} failed ({type(err).__name__}: {err}); retrying next run.")
+            ids_ = [it["id"] for it, _ in batch]
+            if not bad_request(err):  # bad key, permissions, ...: every batch would fail the same way
+                print(f"Stopping: batch {ids_} failed ({type(err).__name__}: {err}). Retrying next run.")
+                break
+            if len(group) > 1:  # find the item Gemini rejects: retry the batch one item at a time
+                print(f"Batch {ids_} rejected (400); retrying its items one by one.")
+                queue[:0] = [[it] for it in group]
+            # Rejected on its own by a model that has worked this run: the item is the problem, so drop it
+            # so it can't block the queue. (Not if only an earlier model worked: a fallback model that
+            # rejects every request would otherwise drop good items.)
+            elif MODELS[_Models.i] in ok_models:
+                print(f"Item {ids_[0]} rejected by Gemini (400: {err}); dropping it.")
+                if not dry_run:
+                    mark_processed(group[0])
+            elif ids_[0] not in deferred:  # nothing has worked yet: maybe every request fails; try others first
+                deferred.add(ids_[0])
+                queue.append(group)
+            else:
+                print(f"Stopping: every Gemini request was rejected (400: {err}). Retrying next run.")
+                break
             continue
         calls += 1
+        ok_models.add(MODELS[_Models.i])
         by_id = {it["id"]: it for it, _ in batch}
+        kept_now = []
         for ev in raw:
             item = by_id.get(int(ev["item_id"])) if str(ev.get("item_id", "")).isdigit() else None
             kept = keep(ev, now, item["source"]) if item else None
             if kept:
-                results.append({**kept, "raw_item_id": item["id"], "source": item["source"]})
+                kept_now.append({**kept, "raw_item_id": item["id"], "source": item["source"]})
+        results += kept_now
         if not dry_run:
+            if store:
+                store(kept_now)  # raises if Supabase is down, leaving these items for the next run
             for it, _ in batch:
                 mark_processed(it)
         time.sleep(DELAY_S)
