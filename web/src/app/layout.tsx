@@ -35,7 +35,7 @@ export const metadata: Metadata = {
       url: `${BASE_PATH}/share-card.png`,
       width: 1200,
       height: 630,
-      alt: "A cheering bear holding a slice of free pizza, above the words FREE FOOD",
+      alt: "A cartoon bear in a CAL cap holding a slice of pizza and a coffee, saying FREE FOOD",
       type: "image/png",
     }],
     // Facebook, Discord and Slack play this inline. iMessage, WhatsApp, LinkedIn and
