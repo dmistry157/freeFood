@@ -9,6 +9,7 @@ import { CAMPUS, colors, fonts, shadow } from './src/theme';
 import { FoodEvent, fetchEvents, isLive, spreadPins } from './src/events';
 import MapView, { Marker, Region } from './src/components/Map';
 import { Pin } from './src/components/Pin';
+import { foodEmoji } from './src/foodEmoji';
 import { EventCard } from './src/components/EventCard';
 import { UnplacedList } from './src/components/UnplacedList';
 import { InstallButton } from './src/components/InstallButton';
@@ -89,7 +90,7 @@ function FoodMap() {
   const today = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   const cardLeft = (width - 272) / 2;
   const pinX = pinPoint?.x ?? width / 2;
-  const cardTop = (pinPoint?.y ?? height * PIN_Y) + 13 + 16; // selected pin radius + gap for the arrow
+  const cardTop = (pinPoint?.y ?? height * PIN_Y) + 21 + 12; // selected pin radius + gap for the arrow
   const arrowLeft = Math.min(252, Math.max(20, pinX - cardLeft));
 
   return (
@@ -118,7 +119,7 @@ function FoodMap() {
             accessibilityLabel={`${e.title}, ${isLive(e, now) ? 'happening now' : 'starting soon'}`}
             zIndex={e.id === selected ? 2 : isLive(e, now) ? 1 : 0}
           >
-            <Pin live={isLive(e, now)} selected={e.id === selected} />
+            <Pin live={isLive(e, now)} selected={e.id === selected} emoji={foodEmoji(e)} />
           </Marker>
         ))}
       </MapView>
@@ -153,7 +154,7 @@ function FoodMap() {
           ) : (
             <>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: colors.live }]} />
+                <View style={[styles.legendDot, { backgroundColor: colors.gold }]} />
                 <Text style={styles.legendStrong}>{liveCount} happening now</Text>
               </View>
               <View style={styles.legendItem}>
