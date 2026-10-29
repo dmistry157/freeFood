@@ -1,0 +1,30 @@
+# Syncs the club list (data/clubs.csv + ACTIVE/EXTRA in pipeline/load_clubs.py) into the Supabase
+# clubs table whenever it changes on main, so a newly added Instagram account is scraped on the next
+# pipeline run. Same as running `python -m pipeline.load_clubs` locally.
+name: clubs
+
+on:
+  push:
+    branches: [main]
+    paths: ["pipeline/load_clubs.py", "data/clubs.csv", ".github/workflows/clubs.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+      - run: pip install -r pipeline/requirements.txt
+      - run: python -m pipeline.load_clubs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
