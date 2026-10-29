@@ -56,6 +56,9 @@ export default function Home() {
     listTouched.current = true;
     setListOpen(next);
   }, []);
+  // Phone: swipe the bar up to open the list, swipe its top edge down to close it.
+  const swipeOpen = useSwipe(() => toggleList(true), undefined);
+  const swipeClose = useSwipe(undefined, () => toggleList(false));
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 768px)");
@@ -306,33 +309,44 @@ export default function Home() {
           <button
             type="button"
             onClick={() => toggleList(true)}
-            className="flex shrink-0 items-center justify-center gap-2 border-t border-navy bg-paper py-3 text-sm font-semibold text-navy transition-colors active:bg-paper-2 md:hidden"
+            {...swipeOpen}
+            // Tall, with room under it for the iPhone home bar, so opening the list isn't a
+            // near miss with the system's swipe-up.
+            style={{ paddingBottom: "max(18px, calc(env(safe-area-inset-bottom) + 10px))" }}
+            className="flex shrink-0 touch-none flex-col items-center gap-2.5 border-t border-navy bg-paper pt-2.5 text-[15px] font-semibold text-navy transition-colors active:bg-paper-2 md:hidden"
           >
-            {loading
-              ? "Loading…"
-              : `${ordered.length} event${ordered.length === 1 ? "" : "s"} nearby`}
-            <span aria-hidden className="text-[11px]">
-              ▲
+            <span aria-hidden className="h-1.5 w-12 rounded-full bg-rule" />
+            <span className="flex items-center gap-2">
+              {loading
+                ? "Loading…"
+                : `${ordered.length} event${ordered.length === 1 ? "" : "s"} nearby`}
+              <span aria-hidden className="text-[11px]">
+                ▲
+              </span>
             </span>
           </button>
         )}
 
         {listOpen && (
           <aside className="flex min-h-0 flex-1 flex-col border-t border-navy bg-paper md:w-[380px] md:flex-none md:border-l md:border-t-0">
-            <button
-              type="button"
-              onClick={() => toggleList(false)}
-              aria-label="Hide the list"
-              className="grid shrink-0 place-items-center py-2.5 transition-colors active:bg-paper-2 md:hidden"
-            >
-              <span aria-hidden className="h-1 w-10 rounded-full bg-rule" />
-            </button>
+            <div {...swipeClose} className="shrink-0 touch-none md:touch-auto">
+              <button
+                type="button"
+                onClick={() => toggleList(false)}
+                aria-label="Hide the list"
+                className="grid w-full place-items-center py-3.5 transition-colors active:bg-paper-2 md:hidden"
+              >
+                <span aria-hidden className="h-1.5 w-12 rounded-full bg-rule" />
+              </button>
 
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-4 py-2.5">
-              <h2 className="eyebrow text-navy">{coords ? "Nearest first" : "Starting soonest"}</h2>
-              {status === "denied" && (
-                <p className="text-[11px] text-muted">Location blocked — sorted by time</p>
-              )}
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-rule px-4 py-2.5">
+                <h2 className="eyebrow text-navy">
+                  {coords ? "Nearest first" : "Starting soonest"}
+                </h2>
+                {status === "denied" && (
+                  <p className="text-[11px] text-muted">Location blocked — sorted by time</p>
+                )}
+              </div>
             </div>
 
             {showLookAhead && (
@@ -343,7 +357,7 @@ export default function Home() {
               />
             )}
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)] md:pb-0">
               {error ? (
                 <p className="px-4 py-6 text-[15px] text-muted">{error}</p>
               ) : loading ? (
@@ -382,6 +396,23 @@ export default function Home() {
       </div>
     </main>
   );
+}
+
+/** Vertical swipe on an element (touch only): up past 24px calls onUp, down calls onDown. */
+function useSwipe(onUp?: () => void, onDown?: () => void) {
+  const startY = useRef<number | null>(null);
+  return {
+    onTouchStart: (e: React.TouchEvent) => {
+      startY.current = e.touches[0].clientY;
+    },
+    onTouchEnd: (e: React.TouchEvent) => {
+      if (startY.current == null) return;
+      const dy = e.changedTouches[0].clientY - startY.current;
+      startY.current = null;
+      if (dy < -24) onUp?.();
+      else if (dy > 24) onDown?.();
+    },
+  };
 }
 
 function SiteFooter({ className = "" }: { className?: string }) {
