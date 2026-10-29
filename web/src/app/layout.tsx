@@ -6,7 +6,7 @@ import { BASE_PATH, SITE_ORIGIN, SITE_URL } from "@/lib/site";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
-const TITLE = "Berkeley Free Food — a live map of free food on campus";
+const TITLE = "Berkeley Free Food";
 const DESCRIPTION =
   "Find free food at UC Berkeley right now. A live map of campus events giving away free " +
   "pizza, boba, snacks and meals — gold means it is happening now, navy means it starts " +
