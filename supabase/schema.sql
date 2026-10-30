@@ -109,6 +109,7 @@ create table if not exists shared_lists (
   last_seen  timestamptz not null default now()
 );
 alter table shared_lists enable row level security;
+alter table shared_lists add column if not exists shared_by text[] not null default '{}';  -- who shared it
 create table if not exists held_emails (            -- emails from pending lists; kept 14 days
   source_id   text primary key,
   list_id     text not null references shared_lists on delete cascade,
@@ -150,9 +151,11 @@ begin
     return 'over_limit';  -- 100 emails per person per day
   end if;
   delete from held_emails where held_at < now() - interval '14 days';
-  insert into shared_lists (list_id, sample)
-  values (left(lower(p_list), 200), left(substring(p_text from 'Subject: ([^\n]*)'), 300))
-  on conflict (list_id) do update set last_seen = now(), sample = excluded.sample
+  insert into shared_lists (list_id, sample, shared_by)
+  values (left(lower(p_list), 200), left(substring(p_text from 'Subject: ([^\n]*)'), 300), array[who])
+  on conflict (list_id) do update set last_seen = now(), sample = excluded.sample,
+    shared_by = case when who = any(shared_lists.shared_by) then shared_lists.shared_by
+                     else shared_lists.shared_by || who end
   returning status into st;
   if st = 'blocked' then
     return 'list_blocked';
@@ -197,5 +200,14 @@ from (select lower(substring(text from 'List: [^\n]*<([^>\n]+)>')) as id, text, 
 where id is not null
 order by id, fetched_at desc
 on conflict (list_id) do nothing;
+
+-- Fill shared_by for lists shared before it existed, from the emails still stored or held.
+update shared_lists l set shared_by = coalesce((
+  select array_agg(c order by c) from (
+    select contributor as c from held_emails h where h.list_id = l.list_id and contributor is not null
+    union
+    select contributor from raw_items r where r.source = 'gmail_shared' and r.contributor is not null
+      and lower(substring(r.text from 'List: [^\n]*<([^>\n]+)>')) = l.list_id) x), '{}')
+where shared_by = '{}';
 
 notify pgrst, 'reload schema';  -- make the API see new/changed functions now

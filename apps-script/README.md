@@ -42,8 +42,8 @@ and put "FREE PIZZA" on the map. The first time anyone shares a list it appears 
 `pending`, and its emails wait in `held_emails` (up to 14 days).
 - **Shortcuts:** `supabase/admin.sql` has a health check and review queries; save each as a favorite in the
   SQL editor.
-- **Review:** Supabase → Table Editor → `shared_lists`, filter `status` = `pending`. `list_id` and `sample`
-  (its latest subject) tell you what it is. `pipeline.shared_emails` also prints the pending ones.
+- **Review:** Supabase → Table Editor → `shared_lists`, filter `status` = `pending`. `list_id`, `sample`
+  (its latest subject) and `shared_by` (who shared it) tell you what it is. `pipeline.shared_emails` also prints the pending ones.
 - **Approve:** set `status` to `approved`. Its held emails go to the pipeline at once; new ones go straight through.
 - **Block:** set `status` to `blocked`. Its held emails are dropped and new ones refused.
 - **A person:** each shared email records the contributor's berkeley.edu address (`raw_items.contributor`).

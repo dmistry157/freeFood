@@ -18,10 +18,9 @@ union all select 'newest shared email has a contributor', coalesce((select (cont
   union all select contributor, held_at from held_emails) x order by t desc limit 1), 'no emails yet'),
   'true (the new Code.gs sends it)';
 
--- 2. Review lists: pending first, with how many emails are waiting and who shared them.
-select l.status, l.list_id, l.sample as latest_subject, l.last_seen,
-       (select count(*) from held_emails h where h.list_id = l.list_id) as held,
-       (select string_agg(distinct h.contributor, ', ') from held_emails h where h.list_id = l.list_id) as shared_by
+-- 2. Review lists: pending first, with who shared them and how many emails are waiting.
+select l.status, l.list_id, l.sample as latest_subject, array_to_string(l.shared_by, ', ') as shared_by,
+       (select count(*) from held_emails h where h.list_id = l.list_id) as held, l.last_seen
 from shared_lists l
 order by l.status = 'pending' desc, l.last_seen desc;
 
