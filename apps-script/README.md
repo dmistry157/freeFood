@@ -49,7 +49,8 @@ runs the latest saved code.
 - **Trust:** an editor of this project could change what it sends, so don't give anyone else edit access.
 
 ## For contributors
-Send the URL: "Open this, sign in with your berkeley.edu account, click Allow, tick your department's
+Send **calfreefood.com/sharing**, which redirects to the web app (`web/vercel.json`, plus the fallback page
+`web/public/sharing/index.html`; if you ever make a new deployment, its URL changes, so update both). Tell them: "Open this, sign in with your berkeley.edu account, click Allow, tick your department's
 lists, press Submit." Google's permission screen asks to read their email (only ticked lists are ever sent), run
 while they're away (the hourly check) and connect to an outside service (the map's database). If Google
 shows "this app isn't verified", it's Advanced → Go to Free Food Map. To stop: open the URL, Stop sharing.
