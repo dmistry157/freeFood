@@ -1,0 +1,46 @@
+# Deploys the website to Vercel production (calfreefood.com) on every push to main
+# that touches web/. GitHub Pages is built separately by web.yml, which serves the
+# same site at dhilen.com/freefood.
+#
+# VERCEL_TOKEN is a personal access token scoped to the mohul-shuklas-projects team.
+# The team and project are named on the command line instead of being linked, so no
+# .vercel directory is needed in the repository.
+#
+# The build runs on Vercel rather than here, which is why this job installs nothing:
+# the two NEXT_PUBLIC_SUPABASE_* values already live in the project's production
+# environment on Vercel, so they never have to be repeated as repository secrets.
+name: vercel
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/vercel.yml"]
+  workflow_dispatch:
+
+# One production deploy at a time; a newer push supersedes one still in flight.
+concurrency:
+  group: vercel-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Never run on a fork: a fork's pushes must not reach the production token.
+    if: github.repository == 'dmistry157/freeFood'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://calfreefood.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          test -n "$VERCEL_TOKEN" || { echo "Add the VERCEL_TOKEN repository secret first"; exit 1; }
+          npx --yes vercel@65 deploy --prod --yes \
+            --token "$VERCEL_TOKEN" \
+            --scope mohul-shuklas-projects \
+            --project berkeley-free-food
