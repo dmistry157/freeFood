@@ -62,15 +62,17 @@ npm run lint
 - **Static export.** `output: "export"` in `next.config.ts`, so it needs no server and
   can sit on any static host. Every fetch happens in the browser, because whether a pin
   is gold depends on the current time.
-- **Two deploys, one canonical address.** Vercel serves calfreefood.com from the repo
-  root on every push to `main` that touches `web/` (`.github/workflows/vercel.yml`);
-  uberkfree.com and `www.` both 308 there. GitHub Pages serves a second copy at
-  dhilen.com/freefood (`web.yml`). `site.ts` keeps the two ideas apart: `SITE_ORIGIN` is
-  the host serving this build, which relative asset paths resolve against, and
-  `CANONICAL_URL` is the one address both builds point search engines and share cards
-  at. Without that split the two copies would compete as duplicate content.
+- **Deploys.** Vercel serves calfreefood.com, built from the repo root on every push to
+  `main` that touches `web/` (`.github/workflows/vercel.yml`). uberkfree.com and `www.`
+  both 308 there. dhilen.com lives in its own repository now and forwards `/freefood`
+  here, so this repo has one deploy rather than two.
+- **One canonical address.** `site.ts` keeps two ideas apart: `SITE_ORIGIN` is the host
+  serving a given build, which relative asset paths resolve against, and `CANONICAL_URL`
+  is the single address every build points search engines and share cards at. They only
+  differ when the site is served from somewhere other than its canonical home.
 - **Sub-path deploys.** Set `NEXT_PUBLIC_BASE_PATH` (e.g. `/freefood`) to serve it under
   a path. `basePath`, the MapLibre worker URL and the local asset links all read it.
+  Nothing uses it today; it is what the old dhilen.com/freefood copy was built with.
 - **The MapLibre worker.** Turbopack doesn't emit MapLibre's tile-parsing worker, so
   `scripts/copy-maplibre-worker.mjs` copies it out of `node_modules` into `public/` on
   every `dev` and `build`. Without it the map draws pins but no streets.
