@@ -16,7 +16,7 @@ const KEEP_SENT = 200;   // message ids remembered so an email isn't sent twice
 // Lists with emails matching this in the last month are recommended (pre-ticked on the first visit) if they're
 // Berkeley lists or sent from a berkeley.edu address (department newsletters often go out via Mailchimp etc.).
 const BERKELEY = /@(?:[\w-]+\.)*berkeley\.edu\b/i;
-const REPLY = /^\s*re\s*(\[\d+\])?\s*:/i;  // "Re: ..." replies are never sent
+const REPLY = /^\s*re\s*(\[\d+\])?\s*:/i;  // "Re: ..." is sent only from whoever started the thread
 const FOOD_Q = '(food OR pizza OR lunch OR dinner OR breakfast OR brunch OR snacks OR refreshments OR boba OR ' +
                'catered OR dessert OR "ice cream" OR cookies OR donuts OR bagels OR tacos OR bbq)';
 
@@ -116,7 +116,7 @@ function sync() {
       if (sent.includes(m.id)) continue;
       const msg = Gmail.Users.Messages.get('me', m.id, { format: 'full' });
       if (!lists.includes(listId_(header_(msg, 'List-Id')))) continue;  // only exact matches ever leave the account
-      if (REPLY.test(header_(msg, 'Subject'))) {  // a discussion on the list, not an announcement: keep it private
+      if (REPLY.test(header_(msg, 'Subject')) && !fromStarter_(msg)) {  // others' replies are a conversation: private
         sent.push(m.id);
         continue;
       }
@@ -164,6 +164,26 @@ function config_() {
 
 function isQuota_(e) {
   return /quota exceeded|rate limit|too many/i.test(String(e && e.message || e));
+}
+
+/**
+ * True if a reply comes from the person who started its thread: an organizer's update ("Re: … moved to Soda 405").
+ * False when we can't tell, e.g. the original isn't in this inbox or the list hides who sent it.
+ */
+function fromStarter_(msg) {
+  const who = sender_(msg);
+  if (!who || listId_(who) === listId_(header_(msg, 'List-Id'))) return false;  // only the list's own address
+  const thread = Gmail.Users.Threads.get('me', msg.threadId,
+                                         { format: 'metadata', metadataHeaders: ['Subject', 'From', 'X-Original-Sender'] });
+  const first = (thread.messages || [])[0];
+  return !!first && first.id !== msg.id && !REPLY.test(header_(first, 'Subject')) && sender_(first) === who;
+}
+
+/** Who really sent it: Google Groups rewrites From to the list's address and keeps the person in X-Original-Sender. */
+function sender_(msg) {
+  const raw = header_(msg, 'X-Original-Sender') || header_(msg, 'From');
+  const m = /<([^>]+)>/.exec(raw);
+  return (m ? m[1] : raw).trim().toLowerCase();
 }
 
 function sharedLists_() {
