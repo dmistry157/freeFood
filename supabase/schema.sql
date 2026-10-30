@@ -152,7 +152,7 @@ begin
   end if;
   delete from held_emails where held_at < now() - interval '14 days';
   insert into shared_lists (list_id, sample, shared_by)
-  values (left(lower(p_list), 200), left(substring(p_text from 'Subject: ([^\n]*)'), 300), array[who])
+  values (left(replace(lower(trim(p_list)), '@', '.'), 200), left(substring(p_text from 'Subject: ([^\n]*)'), 300), array[who])
   on conflict (list_id) do update set last_seen = now(), sample = excluded.sample,
     shared_by = case when who = any(shared_lists.shared_by) then shared_lists.shared_by
                      else shared_lists.shared_by || who end
@@ -161,7 +161,7 @@ begin
     return 'list_blocked';
   elsif st = 'pending' then
     insert into held_emails (source_id, list_id, text, posted_at, contributor)
-    values (left(p_id, 300), left(lower(p_list), 200), left(p_text, 20000), p_posted_at, who)
+    values (left(p_id, 300), left(replace(lower(trim(p_list)), '@', '.'), 200), left(p_text, 20000), p_posted_at, who)
     on conflict (source_id) do nothing;
     return 'held';
   end if;
@@ -172,6 +172,35 @@ begin
 end $$;
 revoke all on function submit_email(text, text, text, timestamptz, text, text) from public;
 grant execute on function submit_email(text, text, text, timestamptz, text, text) to anon, authenticated;
+
+-- Submit registers the ticked lists right away (pending until approved) and credits who ticked them,
+-- so the owner can review a list before any of its emails arrive. Never changes a list's status.
+create or replace function register_lists(p_key text, p_lists text[], p_samples text[], p_contributor text)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(trim(coalesce(p_contributor, '')));
+  id  text;
+begin
+  if not exists (select 1 from submit_keys where key = p_key) then
+    raise exception 'invalid submit key' using errcode = '28000';
+  end if;
+  if who = '' or exists (select 1 from blocked_contributors where email = who) then
+    return 'blocked';
+  end if;
+  for i in 1 .. least(coalesce(array_length(p_lists, 1), 0), 20) loop
+    id := left(replace(lower(trim(coalesce(p_lists[i], ''))), '@', '.'), 200);
+    continue when id = '';
+    insert into shared_lists (list_id, sample, shared_by) values (id, left(p_samples[i], 300), array[who])
+    on conflict (list_id) do update set
+      sample = coalesce(shared_lists.sample, excluded.sample),
+      shared_by = case when who = any(shared_lists.shared_by) then shared_lists.shared_by
+                       else shared_lists.shared_by || who end;
+  end loop;
+  return 'ok';
+end $$;
+revoke all on function register_lists(text, text[], text[], text) from public;
+grant execute on function register_lists(text, text[], text[], text) to anon, authenticated;
 
 -- Approving a list releases its held emails to the pipeline; blocking one drops them.
 create or replace function release_held_emails() returns trigger

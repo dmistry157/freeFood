@@ -35,6 +35,8 @@ function doGet(e) {
     } else {
       saveLists_(lists);
       try {
+        const seen = Object.fromEntries(status_().lists.map(l => [l.id, l.sample]));
+        rpc_('register_lists', { p_lists: lists, p_samples: lists.map(id => seen[id] || null), p_contributor: me_() });
         sync();
         note = `Done: sharing ${plural_(lists.length, 'list')}.`;
       } catch (err) {
@@ -108,11 +110,10 @@ function plural_(n, word) {
 function sync() {
   const lists = sharedLists_();
   if (!lists.length) return 0;
-  const cfg = config_();
   const user = PropertiesService.getUserProperties();
   const sent = JSON.parse(user.getProperty('sent') || '[]');
   const q = `(${lists.map(l => 'list:' + l).join(' OR ')}) ${LOOKBACK}`;
-  let count = 0, me;
+  let count = 0;
   try {
     for (const m of Gmail.Users.Messages.list('me', { q, maxResults: 50 }).messages || []) {
       if (sent.includes(m.id)) continue;
@@ -122,26 +123,16 @@ function sync() {
         sent.push(m.id);
         continue;
       }
-      const resp = UrlFetchApp.fetch(`${cfg.SUPABASE_URL}/rest/v1/rpc/submit_email`, {
-        method: 'post',
-        contentType: 'application/json',
-        headers: { apikey: cfg.SUPABASE_PUBLISHABLE_KEY },
-        payload: JSON.stringify({
-          p_key: cfg.SUBMIT_KEY,
-          p_id: header_(msg, 'Message-ID') || m.id,  // same for everyone on the list, so it's stored once
-          p_text: toText_(msg),
-          p_posted_at: new Date(Number(msg.internalDate)).toISOString(),
-          p_list: listId_(header_(msg, 'List-Id')),
-          p_contributor: me = me || Gmail.Users.getProfile('me').emailAddress,  // for the daily cap and blocking
-        }),
-        muteHttpExceptions: true,
+      const status = rpc_('submit_email', {
+        p_id: header_(msg, 'Message-ID') || m.id,  // same for everyone on the list, so it's stored once
+        p_text: toText_(msg),
+        p_posted_at: new Date(Number(msg.internalDate)).toISOString(),
+        p_list: listId_(header_(msg, 'List-Id')),
+        p_contributor: me_(),  // for the daily cap and blocking
       });
-      if (resp.getResponseCode() !== 200) {
-        throw new Error(`submit_email ${resp.getResponseCode()}: ${resp.getContentText().slice(0, 300)}`);
-      }
       // stored, duplicate, held (list awaiting approval) or list_blocked: done with this email.
       // blocked (this person) or over_limit (100 a day): stop, and try the rest next hour.
-      if (['blocked', 'over_limit'].includes(JSON.parse(resp.getContentText()))) break;
+      if (['blocked', 'over_limit'].includes(status)) break;
       sent.push(m.id);
       count++;
     }
@@ -151,6 +142,27 @@ function sync() {
     user.setProperty('sent', JSON.stringify(sent.slice(-KEEP_SENT)));
   }
   return count;
+}
+
+/** Call a Supabase function (with the submit key) and return its result; throws on an error status. */
+function rpc_(fn, args) {
+  const cfg = config_();
+  const resp = UrlFetchApp.fetch(`${cfg.SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { apikey: cfg.SUPABASE_PUBLISHABLE_KEY },
+    payload: JSON.stringify({ p_key: cfg.SUBMIT_KEY, ...args }),
+    muteHttpExceptions: true,
+  });
+  if (resp.getResponseCode() !== 200) {
+    throw new Error(`${fn} ${resp.getResponseCode()}: ${resp.getContentText().slice(0, 300)}`);
+  }
+  return JSON.parse(resp.getContentText());
+}
+
+let me;  // this person's address, credited in shared_lists and checked against the cap and blocks
+function me_() {
+  return me = me || Gmail.Users.getProfile('me').emailAddress;
 }
 
 /** Script Properties (README step 2), trimmed; names a missing one instead of failing with "Header:null". */

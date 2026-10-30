@@ -38,8 +38,8 @@ runs the latest saved code.
 
 ## Approving lists
 Only lists you approve reach the pipeline, so nobody can invent a list (or fake one in their own inbox)
-and put "FREE PIZZA" on the map. The first time anyone shares a list it appears in `shared_lists` as
-`pending`, and its emails wait in `held_emails` (up to 14 days).
+and put "FREE PIZZA" on the map. As soon as someone ticks a list and presses Submit it appears in
+`shared_lists` as `pending`, with their address in `shared_by`; its emails wait in `held_emails` (up to 14 days).
 - **Shortcuts:** `supabase/admin.sql` has a health check and review queries; save each as a favorite in the
   SQL editor.
 - **Review:** Supabase → Table Editor → `shared_lists`, filter `status` = `pending`. `list_id`, `sample`
