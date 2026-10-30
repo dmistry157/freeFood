@@ -8,7 +8,7 @@ An iPhone app that shows a map of UC Berkeley campus events with free food. A **
 ```
 sources ──► raw_items (Supabase) ──► Gemini extraction ──► geocode + dedupe ──► events (Supabase) ──► Expo app
 ```
-- **The pipeline** (`pipeline/`, Python 3.13) runs on GitHub Actions (`.github/workflows/pipeline.yml`, cron hourly; GitHub actually fires it about every 6 hrs). The entry point is `python -m pipeline.run auto`.
+- **The pipeline** (`pipeline/`, Python 3.13) runs on GitHub Actions (`.github/workflows/pipeline.yml`, cron hourly; GitHub actually fires it about every 6 hrs, so Supabase pg_cron also starts it every 3 hours: `supabase/cron.sql`). The entry point is `python -m pipeline.run auto`.
   - `auto_plan()` in `run.py` decides which sources run, based on how long it's been since each last ran. Those times are kept in the `pipeline_state` table.
 - **Sources** (`pipeline/sources/`):
   - `berkeley_events.py`: events.berkeley.edu, LiveWhale JSON, 7 days ahead.

@@ -26,5 +26,5 @@
 - [ ] Optional: add Groq's free tier (or GitHub Models) as a non-Google fallback for when every Gemini model is overloaded at once.
 - [ ] Two events still have no pin: "F580" (no building given) and "Inclusive Excellence Hub" (location unknown).
 - [ ] Duplicate event: "Trick or Treat with TannerTan36" is stored twice (Anna Head). Check why dedupe didn't merge them.
-- [ ] If GitHub's schedule stays too sparse (about every 6 hrs), trigger runs with Supabase pg_cron.
+- [ ] Every 3 hours via Supabase pg_cron (`supabase/cron.sql`): make the GitHub token, add it to the Vault, run the file, then check `net._http_response` shows 204s.
 - [ ] Update to checkout@v5 and setup-python@v6 to clear the Node 20 deprecation warning.
