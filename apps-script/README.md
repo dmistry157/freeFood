@@ -40,6 +40,8 @@ runs the latest saved code.
 Only lists you approve reach the pipeline, so nobody can invent a list (or fake one in their own inbox)
 and put "FREE PIZZA" on the map. The first time anyone shares a list it appears in `shared_lists` as
 `pending`, and its emails wait in `held_emails` (up to 14 days).
+- **Shortcuts:** `supabase/admin.sql` has a health check and review queries; save each as a favorite in the
+  SQL editor.
 - **Review:** Supabase → Table Editor → `shared_lists`, filter `status` = `pending`. `list_id` and `sample`
   (its latest subject) tell you what it is. `pipeline.shared_emails` also prints the pending ones.
 - **Approve:** set `status` to `approved`. Its held emails go to the pipeline at once; new ones go straight through.
