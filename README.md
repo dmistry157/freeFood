@@ -2,7 +2,7 @@
 
 A live map of UC Berkeley events with free food.
 
-**👉 [dhilen.com/freefood](https://dhilen.com/freefood)**
+**👉 [calfreefood.com](https://calfreefood.com)**
 
 - 🟡 **Gold pin:** happening now
 - 🔵 **Navy pin:** starts within the next 6 hours
@@ -17,18 +17,18 @@ The map refreshes every few minutes and pulls events from Berkeley's events cale
 No App Store needed. Add the website to your Home Screen and it opens full screen, like an app, always with the latest events.
 
 ### iPhone
-1. Open **[dhilen.com/freefood](https://dhilen.com/freefood)** in **Safari**.
+1. Open **[calfreefood.com](https://calfreefood.com)** in **Safari**.
 2. Tap the **Share** button (or **•••** then **Share**).
 3. Tap **Add to Home Screen**, then **Add**.
 
 You can also tap the gold **Install** button at the top right to see these steps.
 
 ### Android
-1. Open **[dhilen.com/freefood](https://dhilen.com/freefood)** in **Chrome**.
+1. Open **[calfreefood.com](https://calfreefood.com)** in **Chrome**.
 2. Open Chrome's menu (**⋮**) and choose **Install app** or **Add to Home screen**.
 
 ### Computer
-Just open [dhilen.com/freefood](https://dhilen.com/freefood). In Chrome or Edge, the install icon in the address bar adds it as a desktop app.
+Just open [calfreefood.com](https://calfreefood.com). In Chrome or Edge, the install icon in the address bar adds it as a desktop app.
 
 ## Native iPhone app (beta testers)
 
