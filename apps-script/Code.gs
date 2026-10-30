@@ -7,11 +7,14 @@
  * Functions ending in _ are private: the page (google.script.run) can only call doGet, status, save, sync.
  */
 const LOOKBACK = 'newer_than:2d';
-const SCAN = 100;        // messages checked per search on the setup page
+const SCAN = 50;         // messages checked per search on the setup page (Gmail caps API calls per minute)
+const CACHE_S = 600;     // the setup page's scan is reused for 10 minutes, so reloading doesn't rescan
 const MAX_LISTS = 20;
 const MAX_TEXT = 20000;
 const KEEP_SENT = 200;   // message ids remembered so an email isn't sent twice
-// Berkeley lists with emails matching this in the last month are recommended (pre-ticked on the first visit).
+// Lists with emails matching this in the last month are recommended (pre-ticked on the first visit) if they're
+// Berkeley lists or sent from a berkeley.edu address (department newsletters often go out via Mailchimp etc.).
+const BERKELEY = /@(?:[\w-]+\.)*berkeley\.edu\b/i;
 const FOOD_Q = '(food OR pizza OR lunch OR dinner OR breakfast OR brunch OR snacks OR refreshments OR boba OR ' +
                'catered OR dessert OR "ice cream" OR cookies OR donuts OR bagels OR tacos OR bbq)';
 
@@ -23,25 +26,41 @@ function doGet() {
 
 /**
  * For the setup page: the lists already shared, and every mailing list seen in the last month with a name,
- * a recent subject and counts. Recommended (Berkeley lists that mentioned food) first.
+ * a recent subject and counts. Recommended (Berkeley lists or senders that mentioned food) first. partial: Gmail's
+ * per-minute limit cut the scan short, so the page suggests reloading in a minute.
  */
 function status() {
+  const cache = CacheService.getUserCache();
+  const hit = cache.get('scan');
+  const scan = hit ? JSON.parse(hit) : scan_();
+  if (!hit && !scan.partial) cache.put('scan', JSON.stringify(scan), CACHE_S);
+  return { shared: sharedLists_(), ...scan };
+}
+
+function scan_() {
   const lists = {}, done = new Set();
-  for (const [q, food] of [[`newer_than:30d -in:sent ${FOOD_Q}`, true], ['newer_than:30d -in:sent', false]]) {
-    for (const m of Gmail.Users.Messages.list('me', { q, maxResults: SCAN }).messages || []) {
-      if (done.has(m.id)) continue;
-      done.add(m.id);
-      const msg = Gmail.Users.Messages.get('me', m.id, { format: 'metadata', metadataHeaders: ['List-Id', 'Subject'] });
-      const raw = header_(msg, 'List-Id'), id = listId_(raw);
-      if (!id) continue;
-      const l = lists[id] = lists[id] || { id, name: listName_(raw, id), sample: header_(msg, 'Subject'), emails: 0, food: 0 };
-      l.emails++;
-      if (food) l.food++;
+  let partial = false;
+  try {
+    for (const [q, food] of [[`newer_than:30d -in:sent ${FOOD_Q}`, true], ['newer_than:30d -in:sent', false]]) {
+      for (const m of Gmail.Users.Messages.list('me', { q, maxResults: SCAN }).messages || []) {
+        if (done.has(m.id)) continue;
+        done.add(m.id);
+        const msg = Gmail.Users.Messages.get('me', m.id, { format: 'metadata', metadataHeaders: ['List-Id', 'Subject', 'From'] });
+        const raw = header_(msg, 'List-Id'), id = listId_(raw);
+        if (!id) continue;
+        const l = lists[id] = lists[id] || { id, name: listName_(raw, id), sample: header_(msg, 'Subject'), emails: 0, food: 0 };
+        l.emails++;
+        if (food) l.food++;
+        if (BERKELEY.test(header_(msg, 'From'))) l.berkeley = true;
+      }
     }
+  } catch (e) {
+    if (!isQuota_(e)) throw e;
+    partial = true;  // show what we found so far
   }
-  const all = Object.values(lists).map(l => ({ ...l, recommended: l.food > 0 && /\.berkeley\.edu$/.test(l.id) }));
+  const all = Object.values(lists).map(l => ({ ...l, recommended: l.food > 0 && (l.berkeley || /\.berkeley\.edu$/.test(l.id)) }));
   all.sort((a, b) => b.recommended - a.recommended || b.food - a.food || b.emails - a.emails);
-  return { shared: sharedLists_(), lists: all };
+  return { lists: all, partial };
 }
 
 /** Save the ticked lists, (re)create this person's hourly trigger, and share the last 2 days right away. */
@@ -86,10 +105,16 @@ function sync() {
       sent.push(m.id);
       count++;
     }
+  } catch (e) {
+    if (!isQuota_(e)) throw e;  // Gmail's per-minute limit: the rest goes next hour
   } finally {
     user.setProperty('sent', JSON.stringify(sent.slice(-KEEP_SENT)));
   }
   return count;
+}
+
+function isQuota_(e) {
+  return /quota exceeded|rate limit|too many/i.test(String(e && e.message || e));
 }
 
 function sharedLists_() {
@@ -101,14 +126,14 @@ function header_(msg, name) {
   return h ? h.value : '';
 }
 
-/** "MET 2030 <met-2030.lists.berkeley.edu>" or "met-2030@lists.berkeley.edu" -> "met-2030.lists.berkeley.edu" */
+/** "EECS Undergrad <eecs-ugrad.lists.berkeley.edu>" or "eecs-ugrad@lists.berkeley.edu" -> "eecs-ugrad.lists.berkeley.edu" */
 function listId_(value) {
   const m = /<([^>]+)>/.exec(value || '');
   const id = (m ? m[1] : value || '').trim().toLowerCase().replace('@', '.');
   return /^[a-z0-9][a-z0-9._-]*\.[a-z]{2,}$/.test(id) ? id : '';
 }
 
-/** '"MET 2030" <met-2030.lists.berkeley.edu>' -> 'MET 2030'; '<met-2030.lists.berkeley.edu>' -> 'met-2030' */
+/** '"EECS Undergrad" <eecs-ugrad.lists.berkeley.edu>' -> 'EECS Undergrad'; '<eecs-ugrad.lists...>' -> 'eecs-ugrad' */
 function listName_(value, id) {
   const m = /^\s*"?([^"<]+?)"?\s*</.exec(value || '');
   return m ? m[1].trim() : id.split('.')[0];

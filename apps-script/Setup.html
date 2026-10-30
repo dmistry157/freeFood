@@ -31,7 +31,7 @@
 
   <section id="recBox" hidden>
     <h2>Recommended</h2>
-    <div class="muted">Berkeley lists that emailed about food in the last month.</div>
+    <div class="muted">Berkeley lists and newsletters that emailed about food in the last month.</div>
     <div class="lists" id="rec"></div>
   </section>
   <section id="otherBox" hidden>
@@ -40,7 +40,7 @@
   </section>
 
   <label class="muted" for="extra">List not shown? Paste its address</label>
-  <input type="text" id="extra" placeholder="met-2030@lists.berkeley.edu">
+  <input type="text" id="extra" placeholder="e.g. dept-announce@lists.berkeley.edu">
 
   <p>
     <button id="save" onclick="save()" disabled>Save</button>
@@ -83,7 +83,8 @@
       }
       $('recBox').hidden = !$('rec').children.length;
       $('otherBox').hidden = !$('other').children.length;
-      $('loading').textContent = lists.length ? '' : 'No mailing lists found in the last month. Paste one below.';
+      $('loading').textContent = s.partial ? 'Gmail limits how fast this can look, so some lists may be missing. Reload in a minute to see more.'
+        : lists.length ? '' : 'No mailing lists found in the last month. Paste one below.';
       $('save').disabled = false;
       if (s.shared.length) msg(`You're sharing ${plural(s.shared.length, 'list')}.`);
     }
