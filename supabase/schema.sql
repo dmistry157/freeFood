@@ -109,6 +109,7 @@ create table if not exists shared_lists (
   last_seen  timestamptz not null default now()
 );
 alter table shared_lists enable row level security;
+alter table shared_lists add column if not exists shared_by text[] not null default '{}';  -- who shared it
 create table if not exists held_emails (            -- emails from pending lists; kept 14 days
   source_id   text primary key,
   list_id     text not null references shared_lists on delete cascade,
@@ -150,15 +151,17 @@ begin
     return 'over_limit';  -- 100 emails per person per day
   end if;
   delete from held_emails where held_at < now() - interval '14 days';
-  insert into shared_lists (list_id, sample)
-  values (left(lower(p_list), 200), left(substring(p_text from 'Subject: ([^\n]*)'), 300))
-  on conflict (list_id) do update set last_seen = now(), sample = excluded.sample
+  insert into shared_lists (list_id, sample, shared_by)
+  values (left(replace(lower(trim(p_list)), '@', '.'), 200), left(substring(p_text from 'Subject: ([^\n]*)'), 300), array[who])
+  on conflict (list_id) do update set last_seen = now(), sample = excluded.sample,
+    shared_by = case when who = any(shared_lists.shared_by) then shared_lists.shared_by
+                     else shared_lists.shared_by || who end
   returning status into st;
   if st = 'blocked' then
     return 'list_blocked';
   elsif st = 'pending' then
     insert into held_emails (source_id, list_id, text, posted_at, contributor)
-    values (left(p_id, 300), left(lower(p_list), 200), left(p_text, 20000), p_posted_at, who)
+    values (left(p_id, 300), left(replace(lower(trim(p_list)), '@', '.'), 200), left(p_text, 20000), p_posted_at, who)
     on conflict (source_id) do nothing;
     return 'held';
   end if;
@@ -169,6 +172,35 @@ begin
 end $$;
 revoke all on function submit_email(text, text, text, timestamptz, text, text) from public;
 grant execute on function submit_email(text, text, text, timestamptz, text, text) to anon, authenticated;
+
+-- Submit registers the ticked lists right away (pending until approved) and credits who ticked them,
+-- so the owner can review a list before any of its emails arrive. Never changes a list's status.
+create or replace function register_lists(p_key text, p_lists text[], p_samples text[], p_contributor text)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(trim(coalesce(p_contributor, '')));
+  id  text;
+begin
+  if not exists (select 1 from submit_keys where key = p_key) then
+    raise exception 'invalid submit key' using errcode = '28000';
+  end if;
+  if who = '' or exists (select 1 from blocked_contributors where email = who) then
+    return 'blocked';
+  end if;
+  for i in 1 .. least(coalesce(array_length(p_lists, 1), 0), 20) loop
+    id := left(replace(lower(trim(coalesce(p_lists[i], ''))), '@', '.'), 200);
+    continue when id = '';
+    insert into shared_lists (list_id, sample, shared_by) values (id, left(p_samples[i], 300), array[who])
+    on conflict (list_id) do update set
+      sample = coalesce(shared_lists.sample, excluded.sample),
+      shared_by = case when who = any(shared_lists.shared_by) then shared_lists.shared_by
+                       else shared_lists.shared_by || who end;
+  end loop;
+  return 'ok';
+end $$;
+revoke all on function register_lists(text, text[], text[], text) from public;
+grant execute on function register_lists(text, text[], text[], text) to anon, authenticated;
 
 -- Approving a list releases its held emails to the pipeline; blocking one drops them.
 create or replace function release_held_emails() returns trigger
@@ -197,5 +229,14 @@ from (select lower(substring(text from 'List: [^\n]*<([^>\n]+)>')) as id, text, 
 where id is not null
 order by id, fetched_at desc
 on conflict (list_id) do nothing;
+
+-- Fill shared_by for lists shared before it existed, from the emails still stored or held.
+update shared_lists l set shared_by = coalesce((
+  select array_agg(c order by c) from (
+    select contributor as c from held_emails h where h.list_id = l.list_id and contributor is not null
+    union
+    select contributor from raw_items r where r.source = 'gmail_shared' and r.contributor is not null
+      and lower(substring(r.text from 'List: [^\n]*<([^>\n]+)>')) = l.list_id) x), '{}')
+where shared_by = '{}';
 
 notify pgrst, 'reload schema';  -- make the API see new/changed functions now

@@ -24,7 +24,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40   # IG posts + stories (up to ~5.5 min each on Apify) + slow Gemini can pass 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,6 +37,7 @@ jobs:
         if: github.event.schedule != '41 12 * * 1'
         run: python -m pipeline.run ${SOURCES:-auto}
         env:
+          PYTHONUNBUFFERED: "1"   # stream the log, so a cancelled run still shows how far it got
           SOURCES: ${{ inputs.sources }}
           IG_HANDLES: ${{ inputs.handles }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
