@@ -2,26 +2,95 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
-
-// Sub-path on GitHub Pages (/freefood). Next doesn't add it to metadata URLs, so add it here.
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+import { BASE_PATH, CANONICAL_URL, SITE_ORIGIN } from "@/lib/site";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
+const TITLE = "Berkeley Free Food";
+const DESCRIPTION = "A map of free food around Berkeley.";
+
 export const metadata: Metadata = {
-  title: "Berkeley Free Food",
+  // Everything below may use a path; Next resolves it against this.
+  metadataBase: new URL(SITE_ORIGIN),
+  title: TITLE,
   applicationName: "Berkeley Free Food",
-  description:
-    "A live map of free food on the UC Berkeley campus. Gold means it is happening now, navy means it starts within six hours.",
+  description: DESCRIPTION,
+  keywords: [
+    "free food Berkeley", "UC Berkeley free food", "Cal free food", "free food map",
+    "Berkeley campus events", "free pizza Berkeley", "student food Berkeley", "Berkeley events today",
+  ],
+  authors: [{ name: "Mohul Shukla" }, { name: "Dhilen Mistry" }],
+  creator: "Mohul Shukla and Dhilen Mistry",
+  category: "food",
+  alternates: { canonical: CANONICAL_URL },
+
+  openGraph: {
+    type: "website",
+    siteName: "Berkeley Free Food",
+    url: CANONICAL_URL,
+    title: TITLE,
+    description: DESCRIPTION,
+    locale: "en_US",
+    images: [{
+      url: `${CANONICAL_URL}/share-card.png`,
+      width: 1200,
+      height: 630,
+      alt: "A cartoon bear in a CAL cap holding a slice of pizza and a coffee, saying FREE FOOD",
+      type: "image/png",
+    }],
+    // Facebook, Discord and Slack play this inline. iMessage, WhatsApp, LinkedIn and
+    // Instagram ignore og:video entirely and show the image above, and X needs an
+    // allowlisted twitter:player card — so the image is what most people will see.
+    // Every share-card URL here is spelled out absolutely on the canonical host: Next
+    // resolves og:image against metadataBase but leaves og:video as written, and a
+    // relative og:video is ignored by every crawler.
+    videos: [{
+      url: `${CANONICAL_URL}/share-card.mp4`,
+      secureUrl: `${CANONICAL_URL}/share-card.mp4`,
+      type: "video/mp4",
+      width: 1200,
+      height: 630,
+    }],
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [`${CANONICAL_URL}/share-card.png`],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large", // let Google show the share card, not a thumbnail
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+
   // The basemap credit OpenStreetMap's licence asks for. It is here rather than
   // on the page because the footer is for the people using the site; the page
   // also carries it as screen-reader text.
   other: {
     attribution: "Map data © OpenStreetMap contributors · tiles by OpenFreeMap",
   },
+
   // Installable: "Add to Home Screen" opens it full screen, like an app.
-  manifest: `${BASE}/manifest.json`,
-  icons: { apple: `${BASE}/apple-touch-icon.png` },
+  manifest: `${BASE_PATH}/manifest.json`,
+  // Spelled out rather than left to the app-router icon convention, which in Next 16
+  // injects the <link> from a client component. Crawlers and older browsers that only
+  // ever ask for /favicon.ico were getting a 404, so the .ico is listed first.
+  icons: {
+    icon: [
+      { url: `${BASE_PATH}/favicon.ico`, sizes: "48x48 32x32 16x16", type: "image/x-icon" },
+      { url: `${BASE_PATH}/icon.svg`, type: "image/svg+xml" },
+    ],
+    apple: `${BASE_PATH}/apple-touch-icon.png`,
+  },
   appleWebApp: { capable: true, title: "Free Food", statusBarStyle: "default" },
 };
 
@@ -34,9 +103,33 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// Structured data, so search engines can describe the site rather than guess at it.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Berkeley Free Food",
+  url: CANONICAL_URL,
+  description: DESCRIPTION,
+  applicationCategory: "LifestyleApplication",
+  operatingSystem: "Any",
+  browserRequirements: "Requires JavaScript",
+  image: `${CANONICAL_URL}/share-card.png`,
+  isAccessibleForFree: true,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  about: { "@type": "CollegeOrUniversity", name: "University of California, Berkeley" },
+  areaServed: { "@type": "Place", name: "Berkeley, California" },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={geist.variable}>
+      <head>
+        <script
+          type="application/ld+json"
+          // Static, author-written object; nothing here comes from user input.
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        />
+      </head>
       <body>
         {children}
         {/* Vercel Web Analytics: page views only, cookieless, no personal data.
