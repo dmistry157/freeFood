@@ -81,7 +81,16 @@ export const metadata: Metadata = {
 
   // Installable: "Add to Home Screen" opens it full screen, like an app.
   manifest: `${BASE_PATH}/manifest.json`,
-  icons: { apple: `${BASE_PATH}/apple-touch-icon.png` },
+  // Spelled out rather than left to the app-router icon convention, which in Next 16
+  // injects the <link> from a client component. Crawlers and older browsers that only
+  // ever ask for /favicon.ico were getting a 404, so the .ico is listed first.
+  icons: {
+    icon: [
+      { url: `${BASE_PATH}/favicon.ico`, sizes: "48x48 32x32 16x16", type: "image/x-icon" },
+      { url: `${BASE_PATH}/icon.svg`, type: "image/svg+xml" },
+    ],
+    apple: `${BASE_PATH}/apple-touch-icon.png`,
+  },
   appleWebApp: { capable: true, title: "Free Food", statusBarStyle: "default" },
 };
 
