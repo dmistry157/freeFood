@@ -29,6 +29,13 @@ Nothing here needs the PR merged: the pipeline already reads every row in `raw_i
 the above before merging. For a quick look first, Deploy → **Test deployments** gives an owner-only URL that
 runs the latest saved code.
 
+## Check what arrived
+- Laptop: `.venv/bin/python -m pipeline.shared_emails` (counts per list, newest emails, read/waiting);
+  `--full 3` prints the 3 newest in full, `--json > shared.json` saves them all.
+- Or the Supabase SQL editor:
+  `select fetched_at, processed, substring(text from 'List: ([^\n]*)') as list, substring(text from 'Subject: ([^\n]*)') as subject from raw_items where source = 'gmail_shared' order by fetched_at desc;`
+- `processed` turns true after the next pipeline run; read emails are deleted after 14 days.
+
 ## Keys and privacy
 - **Supabase secret key:** not used here at all.
 - **Publishable key:** public by design (the app and website ship it).
