@@ -13,6 +13,7 @@ sources ──► raw_items (Supabase) ──► Gemini extraction ──► geo
 - **Sources** (`pipeline/sources/`):
   - `berkeley_events.py`: events.berkeley.edu, LiveWhale JSON, 7 days ahead.
   - `gmail.py`: the owner's bmail `FreeFood` label only. It needs the owner's OAuth credentials, so skip it locally.
+  - `apps-script/` (source `gmail_shared`): other students share their hidden department lists (Berkeley blocks forwarding). A web app they open with their own bmail; an hourly trigger in their account sends matching list emails to Supabase's `submit_email`. Setup: `apps-script/README.md`.
   - `callink.py`: CalLink events. **Off** (not in `auto_plan`): since 2026-10-16 the whole site needs a CalNet login.
   - `calevents.py`: calevents.app, an aggregator of 1,000+ clubs' Instagram events. We read the JSON its own site uses (unofficial), about 3 requests every 2.5 hrs, keeping only events with food keywords. Text only, no images.
   - `instagram.py`: club (and a few business) accounts via Apify, posts and stories once a day. The accounts are `ACTIVE` in `load_clubs.py` (`EXTRA` adds ones not on CalLink); `.github/workflows/clubs.yml` syncs them to Supabase when that file changes on `main`. Spending is capped by `apify_budget.py` (≤ $4.50/month, ≤ $0.25/run).
@@ -37,7 +38,7 @@ sources ──► raw_items (Supabase) ──► Gemini extraction ──► geo
 - **Spend as little money as possible.** Use free tiers only. Don't add paid services, and don't raise the Apify budget or call limits, without asking the owner.
 - **Rate-limit every scraper** (there are delays between requests). Gemini's free tier allows about 20 requests per day per model, which is why calls are batched and capped per run.
 - **Plan each change before making it, and build and test one piece at a time.**
-- Gmail must only ever read the `FreeFood` label, never the wider inbox.
+- Gmail must only ever read the `FreeFood` label, never the wider inbox. The shared-lists script only ever sends emails whose `List-Id` exactly matches a list the contributor ticked.
 - `SUPABASE_SECRET_KEY` bypasses row-level security. Use it only in the pipeline, never in the app.
 - Work on a branch and open a PR to `main`. `main` is what GitHub Actions runs.
 - Commit messages: no `Co-Authored-By: Claude` line.
