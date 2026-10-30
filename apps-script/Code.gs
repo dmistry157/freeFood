@@ -4,7 +4,7 @@
  * Deployed as a web app that runs as whoever opens it. They tick which mailing lists to share; an hourly
  * trigger in their account then sends each new email whose List-Id matches a ticked list (subject, sender,
  * date, text) to Supabase's submit_email. Nothing else leaves their account. Setup: README.md.
- * Save and Stop reload the page (a form back to doGet) rather than use google.script.run, which fails with
+ * Submit and Stop reload the page (a form back to doGet) rather than use google.script.run, which fails with
  * "HTTP 401" for people signed into more than one Google account. Functions ending in _ are private.
  */
 const LOOKBACK = 'newer_than:2d';
@@ -19,7 +19,7 @@ const BERKELEY = /@(?:[\w-]+\.)*berkeley\.edu\b/i;
 const FOOD_Q = '(food OR pizza OR lunch OR dinner OR breakfast OR brunch OR snacks OR refreshments OR boba OR ' +
                'catered OR dessert OR "ice cream" OR cookies OR donuts OR bagels OR tacos OR bbq)';
 
-/** The setup page; Save (?mode=save&list=…&extra=…) and Stop (?mode=stop) submit back here. */
+/** The setup page; Submit (?mode=save&list=…&extra=…) and Stop (?mode=stop) come back here. */
 function doGet(e) {
   const p = (e && e.parameter) || {};
   let note = '', error = '';
@@ -33,9 +33,9 @@ function doGet(e) {
     } else {
       saveLists_(lists);
       try {
-        note = `Saved: sharing ${plural_(lists.length, 'list')}, ${plural_(sync(), 'recent email')} sent. Thank you!`;
+        note = `Done: sharing ${plural_(lists.length, 'list')}. ${plural_(sync(), 'recent email')} sent; new ones go every hour on their own.`;
       } catch (err) {
-        error = `Saved your ${plural_(lists.length, 'list')}, but sending failed (${err.message}). It retries every hour.`;
+        error = `Submitted your ${plural_(lists.length, 'list')}, but sending failed (${err.message}). It retries every hour.`;
       }
     }
   }
