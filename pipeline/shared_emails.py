@@ -1,4 +1,5 @@
-"""Check the emails contributors share through apps-script/ (raw_items with source gmail_shared).
+"""Check the emails contributors share through apps-script/ (raw_items with source gmail_shared), and the
+lists waiting for approval (shared_lists; approve them in Supabase's Table Editor).
 
 Uses the secret key from .env, like the rest of the pipeline. "waiting" = not read by Gemini yet (next
 pipeline run); "read" = extracted. Read emails are deleted after RAW_ITEM_TTL_DAYS (14).
@@ -26,6 +27,13 @@ def fetch(limit: int) -> list[dict]:
     return resp.json()
 
 
+def pending_lists() -> list[dict]:
+    resp = requests.get(f"{REST}/shared_lists", headers=HEADERS, timeout=30, params={
+        "status": "eq.pending", "select": "list_id,sample,last_seen", "order": "last_seen.desc"})
+    resp.raise_for_status()
+    return resp.json()
+
+
 def field(text: str | None, name: str) -> str:
     m = re.search(rf"^{name}: (.*)$", text or "", re.M)
     return m.group(1).strip() if m else ""
@@ -42,6 +50,12 @@ def main():
     if args.json:
         print(json.dumps(rows, indent=2, ensure_ascii=False))
         return
+    pending = pending_lists()
+    if pending:
+        print(f"{len(pending)} lists waiting for approval (Supabase -> Table Editor -> shared_lists -> status):")
+        for p in pending:
+            print(f"  {p['list_id']}  e.g. \"{(p['sample'] or '')[:60]}\"")
+        print()
     if not rows:
         print("No shared emails yet.")
         return

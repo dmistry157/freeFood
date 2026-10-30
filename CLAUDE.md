@@ -40,7 +40,7 @@ sources ──► raw_items (Supabase) ──► Gemini extraction ──► geo
 - **Spend as little money as possible.** Use free tiers only. Don't add paid services, and don't raise the Apify budget or call limits, without asking the owner.
 - **Rate-limit every scraper** (there are delays between requests). Gemini's free tier allows about 20 requests per day per model, which is why calls are batched and capped per run.
 - **Plan each change before making it, and build and test one piece at a time.**
-- Gmail must only ever read the `FreeFood` label, never the wider inbox. The shared-lists script only ever sends emails whose `List-Id` exactly matches a list the contributor ticked.
+- Gmail must only ever read the `FreeFood` label, never the wider inbox. The shared-lists script only ever sends emails whose `List-Id` exactly matches a list the contributor ticked, and `submit_email` only passes on lists the owner approved (`shared_lists`; others wait in `held_emails`).
 - `SUPABASE_SECRET_KEY` bypasses row-level security. Use it only in the pipeline, never in the app.
 - Work on a branch and open a PR to `main`. `main` is what GitHub Actions runs.
 - Commit messages: no `Co-Authored-By: Claude` line.
