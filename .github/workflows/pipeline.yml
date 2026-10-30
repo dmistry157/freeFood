@@ -5,6 +5,13 @@ on:
     - cron: "17 * * * *"   # hourly; run.py auto picks sources by the hour in America/Los_Angeles
     - cron: "41 12 * * 1"  # weekly keepalive only (see last step)
   workflow_dispatch:        # "Run workflow" button in the Actions tab
+    inputs:                 # both empty = same as a scheduled run; manual runs don't reset auto's timers
+      sources:
+        description: "Sources to run instead of auto, e.g. ig_posts ig_stories"
+        default: ""
+      handles:
+        description: "Only these Instagram accounts, e.g. tasa.berkeley crazybee_berkeley"
+        default: ""
 
 permissions:
   contents: read
@@ -28,8 +35,10 @@ jobs:
       - run: pip install -r pipeline/requirements.txt
       - name: Run pipeline
         if: github.event.schedule != '41 12 * * 1'
-        run: python -m pipeline.run auto
+        run: python -m pipeline.run ${SOURCES:-auto}
         env:
+          SOURCES: ${{ inputs.sources }}
+          IG_HANDLES: ${{ inputs.handles }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

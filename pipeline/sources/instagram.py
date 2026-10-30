@@ -10,7 +10,9 @@ Scraper IDs are config so they're easy to swap.
 Run from the repo root:
   .venv/bin/python -m pipeline.sources.instagram posts
   .venv/bin/python -m pipeline.sources.instagram stories
+  IG_HANDLES="tasa.berkeley crazybee_berkeley" .venv/bin/python -m pipeline.sources.instagram stories  # only these
 """
+import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -91,13 +93,17 @@ def fetch_stories(handles: list[str]) -> list[dict]:
 
 def run(kind: str) -> int:
     handles = active_handles()
+    only = os.environ.get("IG_HANDLES", "").lower().split()  # manual run for a few accounts (pipeline.yml)
+    if only:
+        handles = [h for h in handles if h in only]
+        print(f"{SOURCE} {kind}: only {handles} (asked for {only})")
     if kind == "posts":  # stories stay on every club: calevents only reads posts
         covered = calevents.covered_handles()
         skipped = [h for h in handles if h.lower() in covered]
         handles = [h for h in handles if h.lower() not in covered]
         print(f"{SOURCE} posts: {len(skipped)} clubs covered by calevents, scraping {handles}")
-        if not handles:
-            return 0
+    if not handles:
+        return 0
     try:
         found = fetch_posts(handles) if kind == "posts" else fetch_stories(handles)
     except BudgetExceeded as err:

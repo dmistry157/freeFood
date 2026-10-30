@@ -9,7 +9,8 @@ Run from the repo root, choosing which sources to fetch this run (cron decides t
   .venv/bin/python -m pipeline.run auto       # scheduled mode (GitHub Actions, hourly)
 A failing source is logged and skipped so the others still run.
 
-auto mode adapts to however often GitHub actually runs it (it promises hourly, often delivers ~6h).
+auto mode adapts to however often GitHub actually runs it (it promises hourly, often delivers ~6h; supabase/cron.sql
+also starts it every 3h).
 Each job runs when enough time has passed since it last ran (pipeline_state table):
   every run                       berkeley_events + gmail
   >= 2.5h since last full run     + calevents; extract everything pending (max 6 Gemini calls)

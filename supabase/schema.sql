@@ -86,3 +86,28 @@ create table if not exists pipeline_state (
   value timestamptz not null
 );
 alter table pipeline_state enable row level security;  -- pipeline (secret key) only
+
+-- Shared mailing lists: contributors run apps-script/ in their own bmail, and it calls submit_email
+-- (publishable key + a submit key) to queue list emails for the pipeline. It can't read or change
+-- anything else. One row per email (Message-ID), so two people on the same list don't double it.
+create table if not exists submit_keys (
+  key  text primary key,
+  note text
+);
+alter table submit_keys enable row level security;  -- no policies: only the pipeline's secret key sees it
+
+create or replace function submit_email(p_key text, p_id text, p_text text, p_posted_at timestamptz)
+returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from submit_keys where key = p_key) then
+    raise exception 'invalid submit key' using errcode = '28000';
+  end if;
+  insert into raw_items (source, source_id, text, posted_at)
+  values ('gmail_shared', left(p_id, 300), left(p_text, 20000), p_posted_at)
+  on conflict (source, source_id) do nothing;
+  return found;  -- false: already queued
+end $$;
+revoke all on function submit_email(text, text, text, timestamptz) from public;
+grant execute on function submit_email(text, text, text, timestamptz) to anon, authenticated;
+notify pgrst, 'reload schema';  -- make the API see new/changed functions now
