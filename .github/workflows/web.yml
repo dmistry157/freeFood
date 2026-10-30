@@ -1,14 +1,14 @@
-# Builds the website and publishes dhilen.com on GitHub Pages:
-#   dhilen.com/          -> site/index.html (redirects to LinkedIn)
-#   dhilen.com/freefood/ -> web/ (Next.js, static export)
-# The two EXPO_PUBLIC_* values are the read-only Supabase URL and publishable key (shared with
-# the app), stored as repository *variables* (Settings > Secrets and variables > Actions > Variables).
+# Publishes dhilen.com on GitHub Pages. Both pages here are redirects:
+#   dhilen.com/          -> site/index.html          (to LinkedIn)
+#   dhilen.com/freefood/ -> site/freefood/index.html (to calfreefood.com)
+# The map itself is served by Vercel from web/ on calfreefood.com, so nothing is built
+# here any more: Pages only needs these static files and the CNAME beside them.
 name: web
 
 on:
   push:
     branches: [main]
-    paths: ["web/**", "site/**", ".github/workflows/web.yml"]
+    paths: ["site/**", ".github/workflows/web.yml"]
   workflow_dispatch:
 
 permissions:
@@ -28,30 +28,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - run: npm ci
-        working-directory: web
-      - name: Build the website
-        working-directory: web
-        env:
-          NEXT_PUBLIC_BASE_PATH: /freefood
-          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-        run: |
-          test -n "$NEXT_PUBLIC_SUPABASE_URL" && test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" \
-            || { echo "Add the EXPO_PUBLIC_* repository variables first"; exit 1; }
-          npm run build
-      - name: Assemble site
-        run: |
-          mkdir -p _site
-          cp -R site/. _site/
-          cp -R web/out _site/freefood
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4
