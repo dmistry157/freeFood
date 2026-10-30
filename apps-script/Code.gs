@@ -3,7 +3,8 @@
  *
  * Deployed as a web app that runs as whoever opens it. They tick which mailing lists to share; an hourly
  * trigger in their account then sends each new email whose List-Id matches a ticked list (subject, sender,
- * date, text) to Supabase's submit_email. Nothing else leaves their account. Setup: README.md.
+ * date, text) to Supabase's submit_email, which only passes on lists the owner approved (shared_lists).
+ * Nothing else leaves their account. Setup: README.md.
  * Submit and Stop reload the page (a form back to doGet) rather than use google.script.run, which fails with
  * "HTTP 401" for people signed into more than one Google account. Functions ending in _ are private.
  */
@@ -111,7 +112,7 @@ function sync() {
   const user = PropertiesService.getUserProperties();
   const sent = JSON.parse(user.getProperty('sent') || '[]');
   const q = `(${lists.map(l => 'list:' + l).join(' OR ')}) ${LOOKBACK}`;
-  let count = 0;
+  let count = 0, me;
   try {
     for (const m of Gmail.Users.Messages.list('me', { q, maxResults: 50 }).messages || []) {
       if (sent.includes(m.id)) continue;
@@ -130,12 +131,17 @@ function sync() {
           p_id: header_(msg, 'Message-ID') || m.id,  // same for everyone on the list, so it's stored once
           p_text: toText_(msg),
           p_posted_at: new Date(Number(msg.internalDate)).toISOString(),
+          p_list: listId_(header_(msg, 'List-Id')),
+          p_contributor: me = me || Gmail.Users.getProfile('me').emailAddress,  // for the daily cap and blocking
         }),
         muteHttpExceptions: true,
       });
       if (resp.getResponseCode() !== 200) {
         throw new Error(`submit_email ${resp.getResponseCode()}: ${resp.getContentText().slice(0, 300)}`);
       }
+      // stored, duplicate, held (list awaiting approval) or list_blocked: done with this email.
+      // blocked (this person) or over_limit (100 a day): stop, and try the rest next hour.
+      if (['blocked', 'over_limit'].includes(JSON.parse(resp.getContentText()))) break;
       sent.push(m.id);
       count++;
     }

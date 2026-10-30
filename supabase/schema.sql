@@ -96,18 +96,106 @@ create table if not exists submit_keys (
 );
 alter table submit_keys enable row level security;  -- no policies: only the pipeline's secret key sees it
 
-create or replace function submit_email(p_key text, p_id text, p_text text, p_posted_at timestamptz)
-returns boolean
+-- Every list anyone has shared. Only 'approved' lists reach the pipeline; a new list starts 'pending' and
+-- its emails wait in held_emails until the owner approves it (Table Editor -> shared_lists -> status).
+do $$ begin
+  create type list_status as enum ('pending', 'approved', 'blocked');
+exception when duplicate_object then null; end $$;
+create table if not exists shared_lists (
+  list_id    text primary key,                      -- e.g. met-2030.lists.berkeley.edu
+  status     list_status not null default 'pending',
+  sample     text,                                  -- latest subject, to judge the list by
+  first_seen timestamptz not null default now(),
+  last_seen  timestamptz not null default now()
+);
+alter table shared_lists enable row level security;
+create table if not exists held_emails (            -- emails from pending lists; kept 14 days
+  source_id   text primary key,
+  list_id     text not null references shared_lists on delete cascade,
+  text        text,
+  posted_at   timestamptz,
+  contributor text,
+  held_at     timestamptz not null default now()
+);
+alter table held_emails enable row level security;
+create table if not exists blocked_contributors (   -- their submissions are refused
+  email text primary key,
+  note  text
+);
+alter table blocked_contributors enable row level security;
+alter table raw_items add column if not exists contributor text;  -- gmail_shared: who shared it
+create index if not exists raw_items_contributor on raw_items (contributor, fetched_at) where contributor is not null;
+
+-- Returns stored | duplicate | held (list pending) | list_blocked | blocked (contributor) | over_limit.
+drop function if exists submit_email(text, text, text, timestamptz);
+create or replace function submit_email(p_key text, p_id text, p_text text, p_posted_at timestamptz,
+                                        p_list text, p_contributor text)
+returns text
 language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(trim(coalesce(p_contributor, '')));
+  st  list_status;
 begin
   if not exists (select 1 from submit_keys where key = p_key) then
     raise exception 'invalid submit key' using errcode = '28000';
   end if;
-  insert into raw_items (source, source_id, text, posted_at)
-  values ('gmail_shared', left(p_id, 300), left(p_text, 20000), p_posted_at)
+  if coalesce(trim(p_list), '') = '' then
+    raise exception 'missing list id' using errcode = '22023';
+  end if;
+  if who = '' or exists (select 1 from blocked_contributors where email = who) then
+    return 'blocked';
+  end if;
+  if (select count(*) from raw_items where contributor = who and fetched_at > now() - interval '1 day')
+     + (select count(*) from held_emails where contributor = who and held_at > now() - interval '1 day') >= 100 then
+    return 'over_limit';  -- 100 emails per person per day
+  end if;
+  delete from held_emails where held_at < now() - interval '14 days';
+  insert into shared_lists (list_id, sample)
+  values (left(lower(p_list), 200), left(substring(p_text from 'Subject: ([^\n]*)'), 300))
+  on conflict (list_id) do update set last_seen = now(), sample = excluded.sample
+  returning status into st;
+  if st = 'blocked' then
+    return 'list_blocked';
+  elsif st = 'pending' then
+    insert into held_emails (source_id, list_id, text, posted_at, contributor)
+    values (left(p_id, 300), left(lower(p_list), 200), left(p_text, 20000), p_posted_at, who)
+    on conflict (source_id) do nothing;
+    return 'held';
+  end if;
+  insert into raw_items (source, source_id, text, posted_at, contributor)
+  values ('gmail_shared', left(p_id, 300), left(p_text, 20000), p_posted_at, who)
   on conflict (source, source_id) do nothing;
-  return found;  -- false: already queued
+  return case when found then 'stored' else 'duplicate' end;
 end $$;
-revoke all on function submit_email(text, text, text, timestamptz) from public;
-grant execute on function submit_email(text, text, text, timestamptz) to anon, authenticated;
+revoke all on function submit_email(text, text, text, timestamptz, text, text) from public;
+grant execute on function submit_email(text, text, text, timestamptz, text, text) to anon, authenticated;
+
+-- Approving a list releases its held emails to the pipeline; blocking one drops them.
+create or replace function release_held_emails() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.status = 'approved' then
+    insert into raw_items (source, source_id, text, posted_at, contributor)
+    select 'gmail_shared', source_id, text, posted_at, contributor from held_emails where list_id = new.list_id
+    on conflict (source, source_id) do nothing;
+  end if;
+  if new.status <> 'pending' then
+    delete from held_emails where list_id = new.list_id;
+  end if;
+  return new;
+end $$;
+revoke all on function release_held_emails() from public;
+drop trigger if exists shared_lists_release on shared_lists;
+create trigger shared_lists_release after update of status on shared_lists
+  for each row when (old.status is distinct from new.status) execute function release_held_emails();
+
+-- Lists shared before approval existed start as pending, so the owner reviews them too.
+insert into shared_lists (list_id, sample)
+select distinct on (id) id, substring(text from 'Subject: ([^\n]*)')
+from (select lower(substring(text from 'List: [^\n]*<([^>\n]+)>')) as id, text, fetched_at
+      from raw_items where source = 'gmail_shared') t
+where id is not null
+order by id, fetched_at desc
+on conflict (list_id) do nothing;
+
 notify pgrst, 'reload schema';  -- make the API see new/changed functions now

@@ -36,6 +36,19 @@ runs the latest saved code.
   `select fetched_at, processed, substring(text from 'List: ([^\n]*)') as list, substring(text from 'Subject: ([^\n]*)') as subject from raw_items where source = 'gmail_shared' order by fetched_at desc;`
 - `processed` turns true after the next pipeline run; read emails are deleted after 14 days.
 
+## Approving lists
+Only lists you approve reach the pipeline, so nobody can invent a list (or fake one in their own inbox)
+and put "FREE PIZZA" on the map. The first time anyone shares a list it appears in `shared_lists` as
+`pending`, and its emails wait in `held_emails` (up to 14 days).
+- **Review:** Supabase → Table Editor → `shared_lists`, filter `status` = `pending`. `list_id` and `sample`
+  (its latest subject) tell you what it is. `pipeline.shared_emails` also prints the pending ones.
+- **Approve:** set `status` to `approved`. Its held emails go to the pipeline at once; new ones go straight through.
+- **Block:** set `status` to `blocked`. Its held emails are dropped and new ones refused.
+- **A person:** each shared email records the contributor's berkeley.edu address (`raw_items.contributor`).
+  Everyone is capped at 100 emails a day. To shut someone out, add their address to `blocked_contributors`,
+  then `delete from raw_items where contributor = '…';` and delete any fake event from `events`.
+- **Everything at once:** `delete from submit_keys;` stops all shared submissions until you add a new key.
+
 ## Keys and privacy
 - **Supabase secret key:** not used here at all.
 - **Publishable key:** public by design (the app and website ship it).
@@ -45,7 +58,8 @@ runs the latest saved code.
   is junk rows using Gemini quota: delete its row in `submit_keys`, make a new key, update the property.
 - **Contributors' mail:** no tokens are stored anywhere; the script runs as them with read-only Gmail, and
   only emails whose `List-Id` exactly matches a ticked list are sent. Their choices live in their own user
-  properties, which you can't read. Error logs hold status codes, never email content.
+  properties, which you can't read. Error logs hold status codes, never email content. Each shared email
+  stores the contributor's address (for the daily cap and blocking); it goes when the email is deleted.
 - **Trust:** an editor of this project could change what it sends, so don't give anyone else edit access.
 
 ## For contributors
