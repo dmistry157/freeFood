@@ -1,7 +1,7 @@
 """Pipeline entry point: fetch sources -> extract -> place + dedupe -> cleanup.
 
 Run from the repo root, choosing which sources to fetch this run (cron decides the cadence):
-  .venv/bin/python -m pipeline.run berkeley_events gmail
+  .venv/bin/python -m pipeline.run berkeley_events gmail forwarded
   .venv/bin/python -m pipeline.run calevents
   .venv/bin/python -m pipeline.run ig_posts
   .venv/bin/python -m pipeline.run ig_stories
@@ -11,7 +11,7 @@ A failing source is logged and skipped so the others still run.
 
 auto mode adapts to however often GitHub actually runs it (it promises hourly, often delivers ~6h).
 Each job runs when enough time has passed since it last ran (pipeline_state table):
-  every run                       berkeley_events + gmail
+  every run                       berkeley_events + gmail + forwarded
   >= 2.5h since last full run     + calevents; extract everything pending (max 6 Gemini calls)
   otherwise                       extract only urgent items (tonight/today/in N mins; max 2 calls)
   >= 20h since posts, after 8am   + ig_posts
@@ -25,11 +25,12 @@ from zoneinfo import ZoneInfo
 
 from pipeline import dedupe, extract
 from pipeline.db import cleanup, get_state, set_state
-from pipeline.sources import berkeley_events, calevents, callink, gmail, instagram
+from pipeline.sources import berkeley_events, calevents, callink, forwarded, gmail, instagram
 
 SOURCES = {
     "berkeley_events": berkeley_events.run,
     "gmail": gmail.run,
+    "forwarded": forwarded.run,
     "callink": callink.run,
     "calevents": calevents.run,
     "ig_posts": lambda: instagram.run("posts"),
@@ -50,7 +51,7 @@ def due(key: str, every: timedelta, now: datetime) -> bool:
 def auto_plan(now: datetime) -> tuple[list[str], bool, list[str]]:
     """(sources to fetch, urgent_only, state keys to stamp after the run)."""
     hour = now.astimezone(LA).hour
-    names, stamps = ["berkeley_events", "gmail"], []
+    names, stamps = ["berkeley_events", "gmail", "forwarded"], []
     full = due("last_full_extract", FULL_EVERY, now)
     if full:
         names.append("calevents")  # callink is off: its site needs a CalNet login since 2026-10-16
