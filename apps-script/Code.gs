@@ -16,6 +16,7 @@ const KEEP_SENT = 200;   // message ids remembered so an email isn't sent twice
 // Lists with emails matching this in the last month are recommended (pre-ticked on the first visit) if they're
 // Berkeley lists or sent from a berkeley.edu address (department newsletters often go out via Mailchimp etc.).
 const BERKELEY = /@(?:[\w-]+\.)*berkeley\.edu\b/i;
+const REPLY = /^\s*re\s*(\[\d+\])?\s*:/i;  // "Re: ..." replies are never sent
 const FOOD_Q = '(food OR pizza OR lunch OR dinner OR breakfast OR brunch OR snacks OR refreshments OR boba OR ' +
                'catered OR dessert OR "ice cream" OR cookies OR donuts OR bagels OR tacos OR bbq)';
 
@@ -115,6 +116,10 @@ function sync() {
       if (sent.includes(m.id)) continue;
       const msg = Gmail.Users.Messages.get('me', m.id, { format: 'full' });
       if (!lists.includes(listId_(header_(msg, 'List-Id')))) continue;  // only exact matches ever leave the account
+      if (REPLY.test(header_(msg, 'Subject'))) {  // a discussion on the list, not an announcement: keep it private
+        sent.push(m.id);
+        continue;
+      }
       const resp = UrlFetchApp.fetch(`${cfg.SUPABASE_URL}/rest/v1/rpc/submit_email`, {
         method: 'post',
         contentType: 'application/json',
