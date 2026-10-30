@@ -34,7 +34,8 @@ function doGet(e) {
     } else {
       saveLists_(lists);
       try {
-        note = `Done: sharing ${plural_(lists.length, 'list')}. ${plural_(sync(), 'recent email')} sent; new ones go every hour on their own.`;
+        sync();
+        note = `Done: sharing ${plural_(lists.length, 'list')}.`;
       } catch (err) {
         error = `Submitted your ${plural_(lists.length, 'list')}, but sending failed (${err.message}). It retries every hour.`;
       }
