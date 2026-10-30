@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
-import { BASE_PATH, SITE_ORIGIN, SITE_URL } from "@/lib/site";
+import { BASE_PATH, CANONICAL_URL, SITE_ORIGIN } from "@/lib/site";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
@@ -22,17 +22,17 @@ export const metadata: Metadata = {
   authors: [{ name: "Mohul Shukla" }, { name: "Dhilen Mistry" }],
   creator: "Mohul Shukla and Dhilen Mistry",
   category: "food",
-  alternates: { canonical: SITE_URL },
+  alternates: { canonical: CANONICAL_URL },
 
   openGraph: {
     type: "website",
     siteName: "Berkeley Free Food",
-    url: SITE_URL,
+    url: CANONICAL_URL,
     title: TITLE,
     description: DESCRIPTION,
     locale: "en_US",
     images: [{
-      url: `${BASE_PATH}/share-card.png`,
+      url: `${CANONICAL_URL}/share-card.png`,
       width: 1200,
       height: 630,
       alt: "A cartoon bear in a CAL cap holding a slice of pizza and a coffee, saying FREE FOOD",
@@ -41,11 +41,12 @@ export const metadata: Metadata = {
     // Facebook, Discord and Slack play this inline. iMessage, WhatsApp, LinkedIn and
     // Instagram ignore og:video entirely and show the image above, and X needs an
     // allowlisted twitter:player card — so the image is what most people will see.
-    // Spelled out absolutely: Next resolves og:image against metadataBase but leaves
-    // og:video as written, and a relative og:video is ignored by every crawler.
+    // Every share-card URL here is spelled out absolutely on the canonical host: Next
+    // resolves og:image against metadataBase but leaves og:video as written, and a
+    // relative og:video is ignored by every crawler.
     videos: [{
-      url: `${SITE_URL}/share-card.mp4`,
-      secureUrl: `${SITE_URL}/share-card.mp4`,
+      url: `${CANONICAL_URL}/share-card.mp4`,
+      secureUrl: `${CANONICAL_URL}/share-card.mp4`,
       type: "video/mp4",
       width: 1200,
       height: 630,
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: [`${BASE_PATH}/share-card.png`],
+    images: [`${CANONICAL_URL}/share-card.png`],
   },
 
   robots: {
@@ -98,12 +99,12 @@ const JSON_LD = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
   name: "Berkeley Free Food",
-  url: SITE_URL,
+  url: CANONICAL_URL,
   description: DESCRIPTION,
   applicationCategory: "LifestyleApplication",
   operatingSystem: "Any",
   browserRequirements: "Requires JavaScript",
-  image: `${SITE_ORIGIN}${BASE_PATH}/share-card.png`,
+  image: `${CANONICAL_URL}/share-card.png`,
   isAccessibleForFree: true,
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   about: { "@type": "CollegeOrUniversity", name: "University of California, Berkeley" },
