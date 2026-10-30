@@ -105,7 +105,7 @@ function plural_(n, word) {
 function sync() {
   const lists = sharedLists_();
   if (!lists.length) return 0;
-  const cfg = PropertiesService.getScriptProperties().getProperties();
+  const cfg = config_();
   const user = PropertiesService.getUserProperties();
   const sent = JSON.parse(user.getProperty('sent') || '[]');
   const q = `(${lists.map(l => 'list:' + l).join(' OR ')}) ${LOOKBACK}`;
@@ -139,6 +139,22 @@ function sync() {
     user.setProperty('sent', JSON.stringify(sent.slice(-KEEP_SENT)));
   }
   return count;
+}
+
+/** Script Properties (README step 2), trimmed; names a missing one instead of failing with "Header:null". */
+function config_() {
+  const all = PropertiesService.getScriptProperties().getProperties();
+  const cfg = {}, missing = [];
+  for (const k of ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'SUBMIT_KEY']) {
+    cfg[k] = String(all[k] || '').trim();
+    if (!cfg[k]) missing.push(k);
+  }
+  if (missing.length) {
+    throw new Error(`setup incomplete: Script Properties is missing ${missing.join(', ')}` +
+                    (Object.keys(all).length ? ` (it has ${Object.keys(all).join(', ')})` : ''));
+  }
+  cfg.SUPABASE_URL = cfg.SUPABASE_URL.replace(/\/+$/, '');
+  return cfg;
 }
 
 function isQuota_(e) {
