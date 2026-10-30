@@ -37,6 +37,10 @@ jobs:
           GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
           GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
           GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
+          # Unset until the forwarding mailbox exists; sources/forwarded.py then skips itself.
+          FORWARD_IMAP_HOST: ${{ secrets.FORWARD_IMAP_HOST }}
+          FORWARD_IMAP_USER: ${{ secrets.FORWARD_IMAP_USER }}
+          FORWARD_IMAP_PASSWORD: ${{ secrets.FORWARD_IMAP_PASSWORD }}
       # GitHub disables scheduled workflows after 60 days without repo activity; re-enable weekly.
       - name: Keepalive
         if: github.event.schedule == '41 12 * * 1'

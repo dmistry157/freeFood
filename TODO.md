@@ -19,6 +19,13 @@
 - [x] README: how to open and install the app (2026-10-24).
 - [ ] Phase 8: TestFlight. Needs the Apple Developer account ($99/yr).
 
+## Email ingestion (`Email Ingestion Plan.md`)
+- [ ] **Dhilen:** create the forwarding mailbox (free account, 2-Step Verification on, app password) and add `FORWARD_IMAP_HOST` / `_USER` / `_PASSWORD` as Actions secrets. Until then `sources/forwarded.py` skips itself every run. This is the only thing blocking the feature.
+- [ ] `PRIVACY.md`: add the forwarding section (what forwarding sends us, that the body goes to Gemini, what's kept and dropped, how to ask for removal) before the address is advertised anywhere.
+- [ ] Optional, free: `events@dhilen.com` or `events@uberkfree.com` via Cloudflare Email Routing, forwarding into that mailbox. Needs whoever holds the domain's DNS; no pipeline change.
+- [ ] Decide: is a sign-in gate ("only contributors see forwarded events") worth the drop-off? It needs Supabase Auth, an `events.visibility` column, two RLS policies, and sign-in in both `web/` and the Expo app. Plan has the schema.
+- [ ] Parked, needs Dhilen's money decision: OAuth read of users' Gmail. `gmail.readonly` is a Google *restricted* scope — app review plus an annual CASA assessment (~$500-$4,500/yr), several weeks, and in Testing mode every user's refresh token expires after 7 days.
+
 ## Pipeline
 - [ ] CalLink's API started redirecting to a CalNet login on 2026-10-16, so it's turned off in `auto_plan` (the code stays; it also skips itself on the login redirect). It was ~3 items/2 weeks. Re-enable if the site goes public again.
 - [ ] Around 2026-10-21, check Apify spend now that 38 clubs are active (stories for all, posts for the 16 calevents misses). The budget guard stops runs at $4.50/month; if it's tight, drop clubs whose stories never produce food.

@@ -5,7 +5,8 @@
 -- Raw scraped items, one row per post/email/feed entry.
 create table if not exists raw_items (
   id          bigint generated always as identity primary key,
-  source      text not null,             -- berkeley_events | callink | gmail | instagram
+  source      text not null,             -- berkeley_events | callink | calevents | gmail |
+                                         -- forwarded | instagram
   source_id   text not null,
   fetched_at  timestamptz not null default now(),
   text        text,
