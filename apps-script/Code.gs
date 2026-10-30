@@ -4,7 +4,8 @@
  * Deployed as a web app that runs as whoever opens it. They tick which mailing lists to share; an hourly
  * trigger in their account then sends each new email whose List-Id matches a ticked list (subject, sender,
  * date, text) to Supabase's submit_email. Nothing else leaves their account. Setup: README.md.
- * Functions ending in _ are private: the page (google.script.run) can only call doGet, status, save, sync.
+ * Save and Stop reload the page (a form back to doGet) rather than use google.script.run, which fails with
+ * "HTTP 401" for people signed into more than one Google account. Functions ending in _ are private.
  */
 const LOOKBACK = 'newer_than:2d';
 const SCAN = 50;         // messages checked per search on the setup page (Gmail caps API calls per minute)
@@ -18,8 +19,30 @@ const BERKELEY = /@(?:[\w-]+\.)*berkeley\.edu\b/i;
 const FOOD_Q = '(food OR pizza OR lunch OR dinner OR breakfast OR brunch OR snacks OR refreshments OR boba OR ' +
                'catered OR dessert OR "ice cream" OR cookies OR donuts OR bagels OR tacos OR bbq)';
 
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Setup')
+/** The setup page; Save (?mode=save&list=…&extra=…) and Stop (?mode=stop) submit back here. */
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  let note = '', error = '';
+  if (p.mode === 'stop') {
+    saveLists_([]);
+    note = 'Stopped. Nothing more will be shared.';
+  } else if (p.mode === 'save') {
+    const lists = normalize_([].concat((e.parameters && e.parameters.list) || [], p.extra || []));
+    if (!lists.length) {
+      error = 'Tick at least one list, or use Stop sharing.';
+    } else {
+      saveLists_(lists);
+      try {
+        note = `Saved: sharing ${plural_(lists.length, 'list')}, ${plural_(sync(), 'recent email')} sent. Thank you!`;
+      } catch (err) {
+        error = `Saved your ${plural_(lists.length, 'list')}, but sending failed (${err.message}). It retries every hour.`;
+      }
+    }
+  }
+  const t = HtmlService.createTemplateFromFile('Setup');
+  t.data = JSON.stringify({ ...status_(), note, error, url: ScriptApp.getService().getUrl() })
+    .replace(/</g, '\\u003c');  // safe inside <script> even if an email subject contains "</script>"
+  return t.evaluate()
     .setTitle('Free Food Map: share your lists')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -29,7 +52,7 @@ function doGet() {
  * a recent subject and counts. Recommended (Berkeley lists or senders that mentioned food) first. partial: Gmail's
  * per-minute limit cut the scan short, so the page suggests reloading in a minute.
  */
-function status() {
+function status_() {
   const cache = CacheService.getUserCache();
   const hit = cache.get('scan');
   const scan = hit ? JSON.parse(hit) : scan_();
@@ -63,14 +86,19 @@ function scan_() {
   return { lists: all, partial };
 }
 
-/** Save the ticked lists, (re)create this person's hourly trigger, and share the last 2 days right away. */
-function save(lists) {
-  lists = [...new Set((lists || []).map(listId_).filter(Boolean))].slice(0, MAX_LISTS);
+function normalize_(lists) {
+  return [...new Set(lists.map(listId_).filter(Boolean))].slice(0, MAX_LISTS);
+}
+
+/** Store this person's lists and (re)create their hourly trigger; no lists = stop sharing. */
+function saveLists_(lists) {
   PropertiesService.getUserProperties().setProperty('lists', JSON.stringify(lists));
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
-  if (!lists.length) return 0;
-  ScriptApp.newTrigger('sync').timeBased().everyHours(1).create();
-  return sync();
+  if (lists.length) ScriptApp.newTrigger('sync').timeBased().everyHours(1).create();
+}
+
+function plural_(n, word) {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
 
 /** Hourly: send new emails from the shared lists to the map. Returns how many were sent. */

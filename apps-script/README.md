@@ -33,8 +33,8 @@ runs the latest saved code.
 - **Supabase secret key:** not used here at all.
 - **Publishable key:** public by design (the app and website ship it).
 - **Submit key:** only in Script Properties, which only the project's editors (you) can see. Contributors
-  only get the web app: they can't see the code or properties, and the page can only call `doGet`, `status`,
-  `save` and `sync` (the `_` helpers are private); none of them return it. If it ever leaks, the worst case
+  only get the web app: they can't see the code or properties. Save and Stop just reload the page, and the only
+  public functions are `doGet` and `sync` (the `_` helpers are private); neither returns it. If it ever leaks, the worst case
   is junk rows using Gemini quota: delete its row in `submit_keys`, make a new key, update the property.
 - **Contributors' mail:** no tokens are stored anywhere; the script runs as them with read-only Gmail, and
   only emails whose `List-Id` exactly matches a ticked list are sent. Their choices live in their own user
