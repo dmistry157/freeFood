@@ -25,6 +25,22 @@ requests; web app runs as the person opening it, Berkeley accounts only).
 5. **Test with one friend.** What we can't check alone: that the hourly trigger keeps running for someone
    who isn't the script's owner. After they Save, new emails from their lists should keep arriving.
 
+Nothing here needs the PR merged: the pipeline already reads every row in `raw_items`, so you can do all of
+the above before merging. For a quick look first, Deploy → **Test deployments** gives an owner-only URL that
+runs the latest saved code.
+
+## Keys and privacy
+- **Supabase secret key:** not used here at all.
+- **Publishable key:** public by design (the app and website ship it).
+- **Submit key:** only in Script Properties, which only the project's editors (you) can see. Contributors
+  only get the web app: they can't see the code or properties, and the page can only call `doGet`, `status`,
+  `save` and `sync` (the `_` helpers are private); none of them return it. If it ever leaks, the worst case
+  is junk rows using Gemini quota: delete its row in `submit_keys`, make a new key, update the property.
+- **Contributors' mail:** no tokens are stored anywhere; the script runs as them with read-only Gmail, and
+  only emails whose `List-Id` exactly matches a ticked list are sent. Their choices live in their own user
+  properties, which you can't read. Error logs hold status codes, never email content.
+- **Trust:** an editor of this project could change what it sends, so don't give anyone else edit access.
+
 ## For contributors
 Send the URL: "Open this, sign in with your berkeley.edu account, click Allow, tick your department's
 lists, Save." Google's permission screen asks to read their email (only ticked lists are ever sent), run

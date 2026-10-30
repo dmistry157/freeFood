@@ -110,3 +110,4 @@ begin
 end $$;
 revoke all on function submit_email(text, text, text, timestamptz) from public;
 grant execute on function submit_email(text, text, text, timestamptz) to anon, authenticated;
+notify pgrst, 'reload schema';  -- make the API see new/changed functions now
