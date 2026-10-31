@@ -177,19 +177,9 @@ export default function Home() {
 
   const liveCount = ordered.filter((e) => new Date(e.start_time) <= now).length;
 
-  // Whether the real six-hour window is empty. The slider is offered on that
-  // basis and keeps standing once a wider window finds something, so the test
-  // has to be this count rather than what is currently on screen.
-  const sixHourCount = useMemo(
-    () =>
-      events.filter(
-        (e) =>
-          new Date(e.end_time) > now &&
-          new Date(e.start_time).getTime() < now.getTime() + WINDOW_MS,
-      ).length,
-    [events, now],
-  );
-  const showLookAhead = wide && sixHourCount === 0;
+  // Desktop always offers the look-ahead slider, so anyone can check what's on later
+  // this week, not only when the next six hours are empty. Phones keep the list lean.
+  const showLookAhead = wide;
 
   return (
     <main className="flex h-dvh flex-col bg-paper">
