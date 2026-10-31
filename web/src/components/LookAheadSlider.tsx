@@ -26,12 +26,11 @@ export function windowLabel(ms: number): string {
 }
 
 /**
- * Widens the six-hour window when nothing is on.
+ * Widens the six-hour window, up to two days.
  *
- * The map deliberately shows a narrow slice, since what you want at noon is
- * lunch and not next Tuesday. But an empty campus is a dead end, and there are
- * usually weeks of events already stored, so this offers them rather than
- * nothing. Dragging it refetches with a wider horizon.
+ * The map deliberately starts with a narrow slice, since what you want at noon is
+ * lunch and not next Tuesday. But there are usually days of events already stored,
+ * so desktop always offers them. Dragging it refetches with a wider horizon.
  */
 export function LookAheadSlider({ valueMs, onChange, found }: Props) {
   const [hours, setHours] = useState(() => Math.round(valueMs / HOUR_MS));
@@ -70,7 +69,8 @@ export function LookAheadSlider({ valueMs, onChange, found }: Props) {
 
       <p className="mt-1.5 text-[11.5px] leading-relaxed text-label">
         {hours * HOUR_MS === WINDOW_MS
-          ? "Nothing on in the next 6 hours. Drag to look further ahead."
+          ? `${found === 0 ? "Nothing on" : `${found} event${found === 1 ? "" : "s"}`} in the next 6 hours. ` +
+            "Drag to look further ahead."
           : found === 0
             ? `Still nothing within ${windowLabel(hours * HOUR_MS)}.`
             : `${found} event${found === 1 ? "" : "s"} within ${windowLabel(hours * HOUR_MS)}.`}
