@@ -1,8 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EventCard } from "@/components/EventCard";
+import { HeaderMenu } from "@/components/HeaderMenu";
 import { InstallButton } from "@/components/InstallButton";
 import { LookAheadSlider, windowLabel } from "@/components/LookAheadSlider";
 import { NearbyList } from "@/components/NearbyList";
@@ -194,11 +196,18 @@ export default function Home() {
             <span className="text-white"> Free Food</span>
           </h1>
 
-          {/* Phone: pinned to the right of the centred wordmark, so the bar stays one row. */}
-          <InstallButton className="absolute right-3 top-1/2 h-8 -translate-y-1/2 px-3 text-[13px] md:hidden" />
+          {/* Phone: the menu (Share, Install) is pinned to the right of the centred
+              wordmark, so the bar stays one row. */}
+          <HeaderMenu className="absolute right-3 top-1/2 -translate-y-1/2 md:hidden" />
 
           <div className="hidden items-center gap-3 md:flex">
             <InstallButton className="h-10 px-5 text-sm" />
+            <Link
+              href="/sharing"
+              className="grid h-10 place-items-center border border-gold bg-gold px-5 text-sm font-semibold text-navy-deep transition-colors hover:bg-gold/90"
+            >
+              Share
+            </Link>
             {/* Plain text, no icon: the glyphs were doing no work at phone size. */}
             <button
               type="button"
