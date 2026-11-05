@@ -414,27 +414,25 @@ function useSwipe(onUp?: () => void, onDown?: () => void) {
   };
 }
 
+const CREDIT =
+  "font-semibold text-navy-mid underline underline-offset-2 transition-colors hover:text-navy";
+
 function SiteFooter({ className = "" }: { className?: string }) {
   return (
     <footer
       className={`border-t border-rule px-4 py-3 text-[11px] leading-relaxed text-label ${className}`}
     >
       Find free food and meet people around Berkeley!
-      {/* The byline, parked rather than deleted so it can go back up later:
-
-          const credit =
-            "font-semibold text-navy-mid underline underline-offset-2 transition-colors hover:text-navy";
-
-          <span className="mt-1 block">
-            Built by{" "}
-            <a href="https://mohul.dev/" target="_blank" rel="noopener noreferrer" className={credit}>
-              mohul
-            </a>{" "}
-            &{" "}
-            <a href="https://x.com/DhilenMistry" target="_blank" rel="noopener noreferrer" className={credit}>
-              dhilen
-            </a>
-          </span> */}
+      <span className="mt-1 block">
+        Built by{" "}
+        <a href="https://x.com/DhilenMistry" target="_blank" rel="noopener noreferrer" className={CREDIT}>
+          @Dhilen
+        </a>{" "}
+        and{" "}
+        <a href="https://x.com/mohul_shukla" target="_blank" rel="noopener noreferrer" className={CREDIT}>
+          @Mohul
+        </a>
+      </span>
       {/* The basemap credit OpenStreetMap's licence asks for. Off the page,
           since it is noise to anyone looking for lunch, but in the document
           for anyone or anything reading it. */}
